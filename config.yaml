@@ -1,0 +1,3 @@
+connstr: mongodb://localhost:27017
+port: :8000
+dbname: sts
