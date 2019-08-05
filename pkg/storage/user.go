@@ -2,15 +2,11 @@ package storage
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"log"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/HarlamovBuldog/social-tournament-service/pkg/sts"
 )
 
 // User represents a player with id, name
@@ -20,62 +16,76 @@ type User struct {
 	Name    string             `json:"name" bson:"name"`
 	Balance float64            `json:"balance" bson:"balance"`
 }
+
+// AddUser func fills user info with provided name, zero balance by default
+// and with automatically generated id, then adds generated user info to database.
+// It returns added userID in string format if succeed and null string and err if smth wrong.
 func (db *DB) AddUser(ctx context.Context, name string) (string, error) {
-	insertResult, err := db.conn.Collection(usersCollectionName).InsertOne(ctx, sts.User{
-		Name:    name,
-		Balance: 0,
+	insertResult, err := db.conn.Collection(usersCollectionName).InsertOne(ctx, User{
+		Name: name,
 	})
 	if err != nil {
-		return "", fmt.Errorf("error insert doc to collection: %v", err)
+		return "", errors.Wrap(err, "insert doc to collection")
 	}
+
 	insertedID, ok := insertResult.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return "", errors.New("error converting inserted id to primitive.ObjectID")
+		return "", errors.New("convert inserted id to primitive.ObjectID")
 	}
 
 	return insertedID.Hex(), nil
 }
 
-func (db *DB) GetUser(ctx context.Context, id string) (*sts.User, error) {
+// GetUser func tries to find user with provided id string.
+// If succeed it returns *User and nil error. If smth wrong it
+// returns nil *User and corresponding error.
+func (db *DB) GetUser(ctx context.Context, id string) (*User, error) {
 	primID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, fmt.Errorf("error converting string value to primitive id: %v", err)
+		return nil, errors.Wrap(err, "convert string value to primitive.ObjectID type")
 	}
+
 	docReturned := db.conn.Collection(usersCollectionName).FindOne(ctx, bson.M{"_id": primID})
-	if err := docReturned.Err(); err != nil {
-		return nil, fmt.Errorf("error getting doc from collection: %v", err)
+	if err = docReturned.Err(); err != nil {
+		return nil, errors.Wrap(err, "get doc from collection")
 	}
-	var user sts.User
-	err = docReturned.Decode(&user)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding returned doc: %v", err)
+
+	var user User
+	if err = docReturned.Decode(&user); err != nil {
+		return nil, errors.Wrap(err, "decode returned doc")
 	}
 
 	return &user, nil
 }
 
+// DeleteUser func tries to delete user with provided id string.
+// If smth wrong it returns corresponding error, and nil error otherwise.
 func (db *DB) DeleteUser(ctx context.Context, id string) error {
 	primID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return fmt.Errorf("error converting string value to primitive id: %v", err)
+		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
 	}
+
 	deleteResult, err := db.conn.Collection(usersCollectionName).DeleteOne(ctx, bson.M{"_id": primID})
 	if err != nil {
-		log.Printf("Error on deleting user: %v\n", err)
-		return fmt.Errorf("Error on deleting user: %v", err)
+		return errors.Wrap(err, "delete doc from collection")
 	}
-	if deleteResult.DeletedCount < 1 {
-		log.Println("Error on deleting user: DeletedCount < 1")
-		return errors.New("Error on deleting user: DeletedCount < 1")
+
+	if deleteResult.DeletedCount != 1 {
+		return errors.New("delete doc from collection: DeletedCount != 1")
 	}
+
 	return nil
 }
 
+// TakeUserBalance func tries to decrease user balance with provided id string.
+// If smth wrong it returns corresponding error, and nil error otherwise.
 func (db *DB) TakeUserBalance(ctx context.Context, id string, points float64) error {
 	primID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return fmt.Errorf("error converting string value to primitive id: %v", err)
+		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
 	}
+
 	update := bson.D{
 		{"$inc", bson.D{
 			{"balance", -points},
@@ -83,21 +93,24 @@ func (db *DB) TakeUserBalance(ctx context.Context, id string, points float64) er
 	}
 	updateResult, err := db.conn.Collection(usersCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
 	if err != nil {
-		log.Printf("Error on taking user balance: %v\n", err)
-		return fmt.Errorf("Error on taking user balance: %v", err)
+		return errors.Wrap(err, "update doc from collection")
 	}
-	if updateResult.ModifiedCount < 1 {
-		log.Println("Error on taking user balance: ModifiedCount < 1")
-		return errors.New("Error on taking user balance: ModifiedCount < 1")
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc from collection: ModifiedCount != 1")
 	}
+
 	return nil
 }
 
+// FundUserBalance func tries to increase user balance with provided id string.
+// If smth wrong it returns corresponding error, and nil error otherwise
 func (db *DB) FundUserBalance(ctx context.Context, id string, points float64) error {
 	primID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return fmt.Errorf("error converting string value to primitive id: %v", err)
+		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
 	}
+
 	update := bson.D{
 		{"$inc", bson.D{
 			{"balance", points},
@@ -105,12 +118,12 @@ func (db *DB) FundUserBalance(ctx context.Context, id string, points float64) er
 	}
 	updateResult, err := db.conn.Collection(usersCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
 	if err != nil {
-		log.Printf("Error on funding user balance: %v\n", err)
-		return fmt.Errorf("Error on funding user balance: %v", err)
+		return errors.Wrap(err, "update doc from collection")
 	}
-	if updateResult.ModifiedCount < 1 {
-		log.Println("Error on funding user balance: ModifiedCount < 1")
-		return errors.New("Error on funding user balance: ModifiedCount < 1")
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc from collection: ModifiedCount != 1")
 	}
+
 	return nil
 }
