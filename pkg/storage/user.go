@@ -13,6 +13,13 @@ import (
 	"github.com/HarlamovBuldog/social-tournament-service/pkg/sts"
 )
 
+// User represents a player with id, name
+// and certain amount of points as a balance
+type User struct {
+	ID      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name    string             `json:"name" bson:"name"`
+	Balance float64            `json:"balance" bson:"balance"`
+}
 func (db *DB) AddUser(ctx context.Context, name string) (string, error) {
 	insertResult, err := db.conn.Collection(usersCollectionName).InsertOne(ctx, sts.User{
 		Name:    name,
