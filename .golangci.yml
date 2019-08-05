@@ -1,0 +1,15 @@
+lintets:
+  enable-all: true
+  disable:
+    - maligned
+    - prealloc
+    - gochecknoglobals
+linters-settings:
+  govet:
+    # report about shadowed variables
+    check-shadowing: true
+issues:
+  exclude:
+    - composite
+run:
+  tests: false
