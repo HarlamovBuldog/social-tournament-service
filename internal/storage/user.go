@@ -93,11 +93,11 @@ func (db *DB) TakeUserBalance(ctx context.Context, id string, points float64) er
 	}
 	updateResult, err := db.conn.Collection(usersCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
 	if err != nil {
-		return errors.Wrap(err, "update doc from collection")
+		return errors.Wrap(err, "update doc in collection")
 	}
 
 	if updateResult.ModifiedCount != 1 {
-		return errors.New("update doc from collection: ModifiedCount != 1")
+		return errors.New("update doc in collection: ModifiedCount != 1")
 	}
 
 	return nil
@@ -118,11 +118,11 @@ func (db *DB) FundUserBalance(ctx context.Context, id string, points float64) er
 	}
 	updateResult, err := db.conn.Collection(usersCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
 	if err != nil {
-		return errors.Wrap(err, "update doc from collection")
+		return errors.Wrap(err, "update doc in collection")
 	}
 
 	if updateResult.ModifiedCount != 1 {
-		return errors.New("update doc from collection: ModifiedCount != 1")
+		return errors.New("update doc in collection: ModifiedCount != 1")
 	}
 
 	return nil
