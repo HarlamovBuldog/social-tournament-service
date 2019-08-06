@@ -14,9 +14,7 @@ type Server struct {
 	service storage.Service
 }
 
-// NewServer constructs a Server, decodes yaml configuration file
-// and assigns decoded values to config struct.
-func NewServer(db sts.Service) *Server {
+// NewServer initializes router and entrypoints
 	router := mux.NewRouter()
 
 	s := Server{
@@ -36,13 +34,13 @@ func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("error creating new user: can't decode request body: %v\n", err)
+		log.Printf("createNewUser: can't decode request body: %v", err)
 		return
 	}
 	userID, err := s.service.AddUser(req.Context(), user.Name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("error creating new user: %v\n", err)
+		log.Printf("error createNewUser: %v", err)
 		return
 	}
 	err = json.NewEncoder(w).Encode(struct {
@@ -52,7 +50,7 @@ func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("error creating new user: error encoding json: %v\n", err)
+		log.Printf("createNewUser: error encoding json: %v", err)
 		return
 	}
 }
@@ -62,20 +60,19 @@ func (s *Server) getUserInfo(w http.ResponseWriter, req *http.Request) {
 	userID, ok := vars["id"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Println("error getting user info: user id is not provided")
+		log.Println("getUserInfo: user id is not provided")
 		return
 	}
 
 	userData, err := s.service.GetUser(req.Context(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("error getting user info: %v\n", err)
+		log.Printf("getUserInfo: %v", err)
 		return
 	}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", " ")
-	err = enc.Encode(&userData)
-	if err != nil {
+	if err = enc.Encode(&userData); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("error getting user info: error encoding json: %v\n", err)
 		return
@@ -87,13 +84,13 @@ func (s *Server) removeUser(w http.ResponseWriter, req *http.Request) {
 	userID, ok := vars["id"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Println("error removing user: user id is not provided")
+		log.Println("removeUser: user id is not provided")
 		return
 	}
 	err := s.service.DeleteUser(req.Context(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("error removing user info: %v\n", err)
+		log.Printf("removeUser: %v", err)
 		return
 	}
 }
@@ -105,7 +102,7 @@ func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("error taking user bonus points: can't decode request body: %v\n", err)
+		log.Printf("takeUserBonusPoints: can't decode request body: %v", err)
 		return
 	}
 
@@ -113,14 +110,14 @@ func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 	userID, ok := vars["id"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Println("error taking user bonus points: user id is not provided")
+		log.Println("takeUserBonusPoints: user id is not provided")
 		return
 	}
 
 	err = s.service.TakeUserBalance(req.Context(), userID, points.Points)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("error taking user bonus points: %v", err)
+		log.Printf("takeUserBonusPoints: %v", err)
 		return
 	}
 }
@@ -132,7 +129,7 @@ func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("error adding user bonus points: can't decode request body: %v\n", err)
+		log.Printf("addUserBonusPoints: can't decode request body: %v", err)
 		return
 	}
 
@@ -140,14 +137,14 @@ func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 	userID, ok := vars["id"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Println("error adding user bonus points: user id is not provided")
+		log.Println("addUserBonusPoints: user id is not provided")
 		return
 	}
 
 	err = s.service.FundUserBalance(req.Context(), userID, points.Points)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("error adding user bonus points: %v", err)
+		log.Printf("addUserBonusPoints: %v", err)
 		return
 	}
 }
