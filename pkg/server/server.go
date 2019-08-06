@@ -39,6 +39,13 @@ func NewServer(db storage.Service) *Server {
 	router.HandleFunc("/user/{id}", s.removeUser).Methods("DELETE")
 	router.HandleFunc("/user/{id}/take", s.takeUserBonusPoints).Methods("POST")
 	router.HandleFunc("/user/{id}/fund", s.addUserBonusPoints).Methods("POST")
+
+	router.HandleFunc("/tournament", s.createNewTournament).Methods("POST")
+	router.HandleFunc("/tournament/{id}", s.getcreateNewTournamentInfo).Methods("GET")
+	router.HandleFunc("/tournament/{id}/join", s.joincreateNewTournament).Methods("POST")
+	router.HandleFunc("/tournament/{id}/finish", s.finishTournament).Methods("POST")
+	router.HandleFunc("/tournament/{id}", s.deleteTournament).Methods("DELETE")
+
 	return &s
 }
 
@@ -50,6 +57,7 @@ func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
 		log.Printf("createNewUser: can't decode request body: %v", err)
 		return
 	}
+
 	userID, err := s.service.AddUser(req.Context(), user.Name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -155,4 +163,16 @@ func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 		log.Printf("addUserBonusPoints: %v", err)
 		return
 	}
+}
+
+func (s *Server) createNewTournament(w http.ResponseWriter, req *http.Request) {
+
+}
+func (s *Server) getcreateNewTournamentInfo(w http.ResponseWriter, req *http.Request) {
+}
+func (s *Server) joincreateNewTournament(w http.ResponseWriter, req *http.Request) {
+}
+func (s *Server) finishTournament(w http.ResponseWriter, req *http.Request) {
+}
+func (s *Server) deleteTournament(w http.ResponseWriter, req *http.Request) {
 }
