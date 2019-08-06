@@ -14,7 +14,20 @@ type Server struct {
 	service storage.Service
 }
 
+type userIDJSON struct {
+	ID string `json:"id"`
+}
+
+type userNameJSON struct {
+	Name string `json:"name"`
+}
+
+type userPointsJSON struct {
+	Points float64 `json:"points"`
+}
+
 // NewServer initializes router and entrypoints
+func NewServer(db storage.Service) *Server {
 	router := mux.NewRouter()
 
 	s := Server{
@@ -30,7 +43,7 @@ type Server struct {
 }
 
 func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
-	var user sts.User
+	var user userNameJSON
 	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -43,9 +56,8 @@ func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
 		log.Printf("error createNewUser: %v", err)
 		return
 	}
-	err = json.NewEncoder(w).Encode(struct {
-		ID string `json:"id"`
-	}{
+
+	err = json.NewEncoder(w).Encode(userIDJSON{
 		ID: userID,
 	})
 	if err != nil {
@@ -96,9 +108,7 @@ func (s *Server) removeUser(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
-	points := struct {
-		Points float64 `json:"points"`
-	}{}
+	var points userPointsJSON
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -123,9 +133,7 @@ func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
-	points := struct {
-		Points float64 `json:"points"`
-	}{}
+	var points userPointsJSON
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
