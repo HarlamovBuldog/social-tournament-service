@@ -5,21 +5,22 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"time"
 
+	"github.com/HarlamovBuldog/social-tournament-service/internal/server"
+	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
 	"github.com/pkg/errors"
-
-	"github.com/HarlamovBuldog/social-tournament-service/pkg/server"
-	"github.com/HarlamovBuldog/social-tournament-service/pkg/storage"
-	"gopkg.in/yaml.v3"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"gopkg.in/yaml.v3"
 )
 
 type config struct {
 	ConnStr    string `yaml:"conn_str"`
-	ServerPort string `yaml:"server_port"`
+	ServerPort uint16 `yaml:"server_port"`
 	DBName     string `yaml:"db_name"`
 }
 
@@ -30,11 +31,10 @@ func (conf *config) Validate() error {
 	if conf.DBName == "" {
 		return errors.New("database name is not provided")
 	}
-	if conf.ServerPort == "" {
-		return errors.New("server port is not provided")
-	} else if _, err := strconv.ParseUint(conf.ServerPort, 0, 64); err != nil {
-		return errors.Wrap(err, "bad server port provided")
+	if conf.ServerPort < 0 {
+		return errors.New("bad server port provided")
 	}
+
 	return nil
 }
 
@@ -61,21 +61,50 @@ func main() {
 	}
 
 	defer func() {
-		err := client.Disconnect(context.TODO())
+		ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+		defer cancel()
+		err := client.Disconnect(ctx)
 		if err != nil {
 			log.Fatalf("error disconnecting from mongo db: %v", err)
 		}
 	}()
 
-	err = client.Ping(context.TODO(), nil)
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatalf("error connecting to mongo db: %v", err)
 	}
 
 	log.Println("Connected to MongoDB!")
-
 	db := storage.CreateNew(client.Database(conf.DBName))
-	s := server.NewServer(db)
 
-	log.Fatal(http.ListenAndServe("localhost:"+conf.ServerPort, s))
+	servPort := strconv.FormatUint(uint64(conf.ServerPort), 10)
+
+	srv := &http.Server{
+		Addr:    ":" + servPort,
+		Handler: server.NewServer(db),
+	}
+
+	go func() {
+		// returns ErrServerClosed on graceful close
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("ListenAndServe(): %s", err)
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+
+	<-stop
+
+	log.Print("Server shutting down...")
+
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("error shutdown server: %s", err)
+	}
+
+	log.Print("Server stopped")
 }
