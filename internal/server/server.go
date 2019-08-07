@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/HarlamovBuldog/social-tournament-service/pkg/storage"
+	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
 	"github.com/gorilla/mux"
 )
 
@@ -91,7 +91,6 @@ func (s *Server) getUserInfo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	enc := json.NewEncoder(w)
-	enc.SetIndent("", " ")
 	if err = enc.Encode(&userData); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("error getting user info: error encoding json: %v\n", err)
