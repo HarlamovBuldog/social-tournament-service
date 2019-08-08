@@ -20,7 +20,7 @@ import (
 
 type config struct {
 	ConnStr    string `yaml:"conn_str"`
-	ServerPort uint16 `yaml:"server_port"`
+	ServerPort int32  `yaml:"server_port"`
 	DBName     string `yaml:"db_name"`
 }
 
@@ -31,7 +31,7 @@ func (conf *config) Validate() error {
 	if conf.DBName == "" {
 		return errors.New("database name is not provided")
 	}
-	if conf.ServerPort < 0 {
+	if conf.ServerPort < 0 || conf.ServerPort > 65535 {
 		return errors.New("bad server port provided")
 	}
 
@@ -61,15 +61,14 @@ func main() {
 	}
 
 	defer func() {
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
-		defer cancel()
+		ctx, _ := context.WithTimeout(context.TODO(), time.Second*5)
 		err := client.Disconnect(ctx)
 		if err != nil {
 			log.Fatalf("error disconnecting from mongo db: %v", err)
 		}
 	}()
 
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	err = client.Ping(ctx, nil)
 	if err != nil {
@@ -79,7 +78,7 @@ func main() {
 	log.Println("Connected to MongoDB!")
 	db := storage.CreateNew(client.Database(conf.DBName))
 
-	servPort := strconv.FormatUint(uint64(conf.ServerPort), 10)
+	servPort := strconv.FormatInt(int64(conf.ServerPort), 10)
 
 	srv := &http.Server{
 		Addr:    ":" + servPort,
