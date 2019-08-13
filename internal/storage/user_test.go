@@ -2,65 +2,133 @@ package storage
 
 import (
 	"context"
-	"io/ioutil"
+	"fmt"
 	"log"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/ory/dockertest"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"gopkg.in/yaml.v3"
 )
 
-type config struct {
-	ConnStr string `yaml:"conn_str"`
-	DBName  string `yaml:"db_name"`
+var (
+	client *mongo.Client
+	db     *DB
+	users  *mongo.Collection
+)
+
+const (
+	dbName = "sts"
+	dbPort = "27017/tcp"
+)
+
+type Container struct {
+	pool     *dockertest.Pool
+	resource *dockertest.Resource
 }
 
-var db *DB
-var users *mongo.Collection
-
-func TestMain(m *testing.M) {
-	conf, err := populateConfig()
+func NewContainer(pool, repository, tag string, env []string) (*Container, error) {
+	p, err := dockertest.NewPool(pool)
 	if err != nil {
-		log.Fatalf("error populating config: %v", err)
+		return nil, errors.Wrap(err, "error create new docker pool")
 	}
 
-	clientOptions := options.Client().ApplyURI(conf.ConnStr)
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	r, err := p.Run(repository, tag, env)
 	if err != nil {
-		log.Fatalf("error connecting to mongo db: %v", err)
+		return nil, errors.Wrap(err, "error running docker container")
 	}
 
-	defer func() {
+	return &Container{
+		pool:     p,
+		resource: r,
+	}, nil
+}
+
+func (c *Container) Purge() error {
+	if client != nil {
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
 		defer cancel()
 		err := client.Disconnect(ctx)
 		if err != nil {
-			log.Printf("error disconnecting from mongo db: %v", err)
-			return
+			return errors.Wrap(err, "error disconnect from mongo client")
 		}
-	}()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Printf("error connecting to mongo db: %v", err)
-		return
 	}
-
-	log.Println("Connected to MongoDB!")
-
-	db = CreateNew(client.Database(conf.DBName))
-	users = client.Database(conf.DBName).Collection(usersCollectionName)
-
-	m.Run()
+	return c.pool.Purge(c.resource)
 }
 
+func (c *Container) GetBindedPort(p string) string {
+	return c.resource.GetPort(p)
+}
+
+func TestMain(m *testing.M) {
+	c, err := setupDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	code := m.Run()
+
+	if err := c.Purge(); err != nil {
+		log.Fatal(err)
+	}
+	os.Exit(code)
+}
+
+func setupDB() (*Container, error) {
+	c, err := NewContainer("", "mongo", "4.0.12-xenial", []string{})
+	if err != nil {
+		return nil, err
+	}
+
+	posPort := c.GetBindedPort(dbPort)
+
+	i := 0
+	for {
+		if i >= 60 {
+			return nil, errors.New("docker start time-out")
+		}
+		i++
+
+		time.Sleep(5 * time.Second)
+
+		writeConnectionString := fmt.Sprintf("mongodb://localhost:%s", posPort)
+
+		clientOptions := options.Client().ApplyURI(writeConnectionString)
+		client, err = mongo.Connect(context.TODO(), clientOptions)
+		if err != nil {
+			log.Printf("error connecting to mongo client: %s", err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Printf("error ping mongo client: %s", err)
+			continue
+		}
+
+		log.Println("Connected to MongoDB!")
+		db = CreateNew(client.Database(dbName))
+		users = client.Database(dbName).Collection(usersCollectionName)
+
+		break
+	}
+
+	return c, nil
+}
+
+func cleanUp(t *testing.T) {
+	err := client.Database(dbName).Collection(usersCollectionName).Drop(context.TODO())
+	require.NoError(t, err)
+
+	err = client.Database(dbName).Collection(tournamentsCollectionName).Drop(context.TODO())
+	require.NoError(t, err)
+}
 func TestAddUser(t *testing.T) {
 	userIDExpected, err := db.AddUser(context.TODO(), "gennadiy")
 	if err != nil {
@@ -81,9 +149,7 @@ func TestAddUser(t *testing.T) {
 
 	assert.Equal(&User{ID: userIDExpected2, Name: "gennadiy"}, actualUser, "The two users should be the same.")
 
-	if err := dropUsersCollection(); err != nil {
-		t.Fatalf("error clear users collection: %v", err)
-	}
+	cleanUp(t)
 }
 
 func TestGetUser(t *testing.T) {
@@ -116,9 +182,7 @@ func TestGetUser(t *testing.T) {
 	actualUser, err = db.GetUser(context.TODO(), notExistUserID.Hex())
 	assert.EqualError(err, "decode returned doc: "+mongo.ErrNoDocuments.Error(), "The two errors should be the same")
 
-	if err := dropUsersCollection(); err != nil {
-		t.Fatalf("error clear users collection: %v", err)
-	}
+	cleanUp(t)
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -141,9 +205,7 @@ func TestDeleteUser(t *testing.T) {
 	err = db.DeleteUser(context.TODO(), userIDExpected)
 	assert.EqualError(err, "delete doc from collection: DeletedCount != 1", "The two errors should be the same")
 
-	if err := dropUsersCollection(); err != nil {
-		t.Fatalf("error clear users collection: %v", err)
-	}
+	cleanUp(t)
 }
 
 func TestTakeUserBalance(t *testing.T) {
@@ -225,42 +287,4 @@ func TestFundUserBalance(t *testing.T) {
 
 	assert.Equal(&User{ID: addedUserObjectID, Name: "Vasya", Balance: 100.0}, addedUser,
 		"The two users should be the same.")
-}
-
-func dropUsersCollection() error {
-	if err := users.Drop(context.TODO()); err != nil {
-		return errors.Wrap(err, "drop users collection")
-	}
-
-	return nil
-}
-
-func (conf *config) Validate() error {
-	if conf.ConnStr == "" {
-		return errors.New("connection string is not provided")
-	}
-	if conf.DBName == "" {
-		return errors.New("database name is not provided")
-	}
-
-	return nil
-}
-
-func populateConfig() (*config, error) {
-	yamlConfigFile, err := ioutil.ReadFile("../../test_data/config.yaml")
-	if err != nil {
-		return nil, errors.Wrap(err, "open config file")
-	}
-
-	var conf config
-	err = yaml.Unmarshal(yamlConfigFile, &conf)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal config file")
-	}
-
-	if err = conf.Validate(); err != nil {
-		return nil, errors.Wrap(err, "validate config file")
-	}
-
-	return &conf, nil
 }
