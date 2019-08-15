@@ -9,7 +9,6 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
@@ -24,7 +23,8 @@ func TestCreateNewUser_Success(t *testing.T) {
 	enc, err := json.Marshal(userNameJSON{
 		Name: "Gennadiy",
 	})
-	require.NoError(t, err)
+	require := require.New(t)
+	require.NoError(err)
 
 	b := bytes.NewBuffer(enc)
 	req := httptest.NewRequest("GET", "/user", b)
@@ -32,13 +32,12 @@ func TestCreateNewUser_Success(t *testing.T) {
 	s.createNewUser(w, req)
 
 	actualCode := w.Result().StatusCode
-	assert := assert.New(t)
-	assert.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
+	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
 
 	var actualUserID userIDJSON
 	err = json.NewDecoder(w.Result().Body).Decode(&actualUserID)
-	require.NoError(t, err)
-	assert.Equal(actualUserID, userIDJSON{ID: "code_str"}, "The two bodies shoud be the same")
+	require.NoError(err)
+	require.Equal(userIDJSON{ID: "code_str"}, actualUserID, "The two bodies shoud be the same")
 }
 
 func TestCreateNewUser_DB_Fail(t *testing.T) {
@@ -52,7 +51,8 @@ func TestCreateNewUser_DB_Fail(t *testing.T) {
 	enc, err := json.Marshal(userNameJSON{
 		Name: "Vasiliy",
 	})
-	require.NoError(t, err)
+	require := require.New(t)
+	require.NoError(err)
 
 	b := bytes.NewBuffer(enc)
 	req := httptest.NewRequest("GET", "/user", b)
@@ -60,8 +60,7 @@ func TestCreateNewUser_DB_Fail(t *testing.T) {
 	s.createNewUser(w, req)
 
 	actualCode := w.Result().StatusCode
-	assert := assert.New(t)
-	assert.Equal(http.StatusInternalServerError, actualCode, "The two http codes should be the same")
+	require.Equal(http.StatusInternalServerError, actualCode, "The two http codes should be the same")
 }
 
 func TestCreateNewUser_Bad_Req(t *testing.T) {
@@ -77,6 +76,6 @@ func TestCreateNewUser_Bad_Req(t *testing.T) {
 	s.createNewUser(w, req)
 
 	actualCode := w.Result().StatusCode
-	assert := assert.New(t)
-	assert.Equal(http.StatusBadRequest, actualCode, "The two http codes should be the same")
+	require := require.New(t)
+	require.Equal(http.StatusBadRequest, actualCode, "The two http codes should be the same")
 }
