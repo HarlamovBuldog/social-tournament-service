@@ -19,7 +19,7 @@ func TestCreateNewUser_Success(t *testing.T) {
 	defer ctrl.Finish()
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Gennadiy")).Times(1).Return("code_str", nil)
-	s := NewServer(mock)
+
 	enc, err := json.Marshal(userNameJSON{
 		Name: "Gennadiy",
 	})
@@ -27,8 +27,10 @@ func TestCreateNewUser_Success(t *testing.T) {
 	require.NoError(err)
 
 	b := bytes.NewBuffer(enc)
-	req := httptest.NewRequest("GET", "/user", b)
+	req := httptest.NewRequest("POST", "/user", b)
 	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
 	s.createNewUser(w, req)
 
 	actualCode := w.Result().StatusCode
@@ -46,7 +48,6 @@ func TestCreateNewUser_DB_Fail(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Vasiliy")).Times(1).Return("", errors.New("insert doc to collection"))
-	s := NewServer(mock)
 
 	enc, err := json.Marshal(userNameJSON{
 		Name: "Vasiliy",
@@ -55,8 +56,10 @@ func TestCreateNewUser_DB_Fail(t *testing.T) {
 	require.NoError(err)
 
 	b := bytes.NewBuffer(enc)
-	req := httptest.NewRequest("GET", "/user", b)
+	req := httptest.NewRequest("POST", "/user", b)
 	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
 	s.createNewUser(w, req)
 
 	actualCode := w.Result().StatusCode
@@ -69,13 +72,13 @@ func TestCreateNewUser_Bad_Req(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Any()).Times(0)
-	s := NewServer(mock)
 
-	req := httptest.NewRequest("GET", "/user", nil)
+	req := httptest.NewRequest("POST", "/user", nil)
 	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
 	s.createNewUser(w, req)
 
 	actualCode := w.Result().StatusCode
-	require := require.New(t)
-	require.Equal(http.StatusBadRequest, actualCode, "The two http codes should be the same")
+	require.Equal(t, http.StatusBadRequest, actualCode, "The two http codes should be the same")
 }
