@@ -202,3 +202,209 @@ func TestRemoveUser_Bad_Req(t *testing.T) {
 	actualCode := w.Result().StatusCode
 	require.Equal(t, http.StatusBadRequest, actualCode, "The two http codes should be the same")
 }
+
+func TestTakeUserBonusPoints_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	userID := primitive.NewObjectID()
+	userPoints := 200.0
+	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).Return(nil)
+
+	enc, err := json.Marshal(userPointsJSON{
+		Points: userPoints,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	expectedURLPath := fmt.Sprintf("/user/%s/take", userID.Hex())
+	req := httptest.NewRequest("POST", expectedURLPath, b)
+	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.takeUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
+}
+
+func TestTakeUserBonusPoints_DB_Fail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	userID := primitive.NewObjectID()
+	userPoints := 200.0
+	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).
+		Return(errors.New("update doc in collection"))
+
+	enc, err := json.Marshal(userPointsJSON{
+		Points: userPoints,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	expectedURLPath := fmt.Sprintf("/user/%s/take", userID.Hex())
+	req := httptest.NewRequest("POST", expectedURLPath, b)
+	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.takeUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(http.StatusInternalServerError, actualCode, "The two http codes should be the same")
+}
+
+func TestTakeUserBonusPoints_Bad_Req_Body(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+	userID := primitive.NewObjectID()
+	expectedURLPath := fmt.Sprintf("/user/%s/take", userID.Hex())
+	req := httptest.NewRequest("POST", expectedURLPath, nil)
+	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.takeUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(t, http.StatusBadRequest, actualCode, "The two http codes should be the same")
+}
+
+func TestTakeUserBonusPoints_Bad_Req_URL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+	userPoints := 200.0
+	enc, err := json.Marshal(userPointsJSON{
+		Points: userPoints,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	expectedURLPath := fmt.Sprintf("/user/%s/take", "garbage")
+	req := httptest.NewRequest("POST", expectedURLPath, b)
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.takeUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(http.StatusBadRequest, actualCode, "The two http codes should be the same")
+}
+
+func TestAddUserBonusPoints_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	userID := primitive.NewObjectID()
+	userPoints := 200.0
+	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).Return(nil)
+
+	enc, err := json.Marshal(userPointsJSON{
+		Points: userPoints,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	expectedURLPath := fmt.Sprintf("/user/%s/fund", userID.Hex())
+	req := httptest.NewRequest("POST", expectedURLPath, b)
+	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.addUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
+}
+
+func TestAddUserBonusPoints_DB_Fail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	userID := primitive.NewObjectID()
+	userPoints := 200.0
+	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).
+		Return(errors.New("update doc in collection"))
+
+	enc, err := json.Marshal(userPointsJSON{
+		Points: userPoints,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	expectedURLPath := fmt.Sprintf("/user/%s/fund", userID.Hex())
+	req := httptest.NewRequest("POST", expectedURLPath, b)
+	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.addUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(http.StatusInternalServerError, actualCode, "The two http codes should be the same")
+}
+
+func TestAddUserBonusPoints_Bad_Req_Body(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+	userID := primitive.NewObjectID()
+	expectedURLPath := fmt.Sprintf("/user/%s/fund", userID.Hex())
+	req := httptest.NewRequest("POST", expectedURLPath, nil)
+	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.addUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(t, http.StatusBadRequest, actualCode, "The two http codes should be the same")
+}
+
+func TestAddUserBonusPoints_Bad_Req_URL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := storage.NewMockService(ctrl)
+	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+	userPoints := 200.0
+	enc, err := json.Marshal(userPointsJSON{
+		Points: userPoints,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	expectedURLPath := fmt.Sprintf("/user/%s/fund", "garbage")
+	req := httptest.NewRequest("POST", expectedURLPath, b)
+	w := httptest.NewRecorder()
+
+	s := NewServer(mock)
+	s.addUserBonusPoints(w, req)
+
+	actualCode := w.Result().StatusCode
+	require.Equal(http.StatusBadRequest, actualCode, "The two http codes should be the same")
+}
