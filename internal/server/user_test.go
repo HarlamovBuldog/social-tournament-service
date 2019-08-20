@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,6 +20,7 @@ import (
 func TestCreateNewUser_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Gennadiy")).Times(1).Return("code_str", nil)
 
@@ -30,6 +32,13 @@ func TestCreateNewUser_Success(t *testing.T) {
 
 	b := bytes.NewBuffer(enc)
 	req := httptest.NewRequest("POST", "/user", b)
+
+	actualURLPath := req.URL.Path
+	require.Equal("/user", actualURLPath, "The two URL pathes should be the same")
+
+	actualReqMethod := req.Method
+	require.Equal("POST", actualReqMethod, "The two request methods should be the same")
+
 	w := httptest.NewRecorder()
 
 	s := NewServer(mock)
@@ -94,8 +103,10 @@ func TestGetUserInfo_Success(t *testing.T) {
 	expectedUser := &storage.User{ID: expectedUserID, Name: "Gennadiy", Balance: 0}
 	mock.EXPECT().GetUser(gomock.Any(), gomock.Eq(expectedUserID.Hex())).Times(1).Return(expectedUser, nil)
 
-	req := httptest.NewRequest("GET", "/user/", nil)
+	expectedURLPath := fmt.Sprintf("/user/%s", expectedUserID.Hex())
+	req := httptest.NewRequest("GET", expectedURLPath, nil)
 	req = mux.SetURLVars(req, map[string]string{"id": expectedUserID.Hex()})
+
 	w := httptest.NewRecorder()
 
 	s := NewServer(mock)
@@ -120,7 +131,8 @@ func TestGetUserInfo_DB_Fail(t *testing.T) {
 	mock.EXPECT().GetUser(gomock.Any(), gomock.Eq(expectedUserID.Hex())).
 		Times(1).Return(nil, errors.New("get doc from collection"))
 
-	req := httptest.NewRequest("GET", "/user", nil)
+	expectedURLPath := fmt.Sprintf("/user/%s", expectedUserID.Hex())
+	req := httptest.NewRequest("GET", expectedURLPath, nil)
 	req = mux.SetURLVars(req, map[string]string{"id": expectedUserID.Hex()})
 	w := httptest.NewRecorder()
 
@@ -138,7 +150,8 @@ func TestGetUserInfo_Bad_Req(t *testing.T) {
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().GetUser(gomock.Any(), gomock.Any()).Times(0)
 
-	req := httptest.NewRequest("GET", "/user", nil)
+	expectedURLPath := fmt.Sprintf("/user/%s", "garbage")
+	req := httptest.NewRequest("GET", expectedURLPath, nil)
 	w := httptest.NewRecorder()
 
 	s := NewServer(mock)
@@ -156,7 +169,8 @@ func TestRemoveUser_Success(t *testing.T) {
 	userID := primitive.NewObjectID()
 	mock.EXPECT().DeleteUser(gomock.Any(), gomock.Eq(userID.Hex())).Times(1).Return(nil)
 
-	req := httptest.NewRequest("DELETE", "/user/", nil)
+	expectedURLPath := fmt.Sprintf("/user/%s", userID.Hex())
+	req := httptest.NewRequest("DELETE", expectedURLPath, nil)
 	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
 	w := httptest.NewRecorder()
 
@@ -175,7 +189,8 @@ func TestRemoveUser_DB_Fail(t *testing.T) {
 	userID := primitive.NewObjectID()
 	mock.EXPECT().DeleteUser(gomock.Any(), gomock.Eq(userID.Hex())).Times(1).Return(errors.New("delete doc from collection"))
 
-	req := httptest.NewRequest("DELETE", "/user/", nil)
+	expectedURLPath := fmt.Sprintf("/user/%s", userID.Hex())
+	req := httptest.NewRequest("DELETE", expectedURLPath, nil)
 	req = mux.SetURLVars(req, map[string]string{"id": userID.Hex()})
 	w := httptest.NewRecorder()
 
@@ -193,7 +208,8 @@ func TestRemoveUser_Bad_Req(t *testing.T) {
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().DeleteUser(gomock.Any(), gomock.Any()).Times(0)
 
-	req := httptest.NewRequest("DELETE", "/user", nil)
+	expectedURLPath := fmt.Sprintf("/user/%s", "garbage")
+	req := httptest.NewRequest("DELETE", expectedURLPath, nil)
 	w := httptest.NewRecorder()
 
 	s := NewServer(mock)
