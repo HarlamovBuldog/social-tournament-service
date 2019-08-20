@@ -10,9 +10,8 @@ WORKDIR /go/src/github.com/HarlamovBuldog/social-tournament-service
 COPY . .
 
 # Build the Go app.
-# Path for resulting files is configured by -o tag 
 # Rusulting files will be inside /go/bin/social-tournament-service
-RUN env GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -mod=vendor -a ./...
+RUN env GO111MODULE=on CGO_ENABLED=0 GOOS=linux go install -mod=vendor -a ./...
 
 # Start a new build stage
 FROM scratch
@@ -21,7 +20,7 @@ FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy the Pre-built binary file from the previous stage
-COPY --from=builder /go/src/github.com/HarlamovBuldog/social-tournament-service/social-tournament-service main
+COPY --from=builder /go/bin/social-tournament-service main
 
 # Starting bash  
 ENTRYPOINT ["./main"]
