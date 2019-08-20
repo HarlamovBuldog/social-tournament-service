@@ -1,4 +1,4 @@
-lintets:
+linters:
   enable-all: true
   disable:
     - maligned
@@ -10,6 +10,6 @@ linters-settings:
     check-shadowing: true
 issues:
   exclude:
-    - composite
+    - composites
 run:
   tests: false
