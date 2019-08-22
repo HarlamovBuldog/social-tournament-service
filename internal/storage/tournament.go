@@ -147,10 +147,73 @@ func (db *DB) SetTournamentWinner(ctx context.Context, tournamentID, userID stri
 
 // IncreaseTournamentPrize func ...
 func (db *DB) IncreaseTournamentPrize(ctx context.Context, id string, amount float64) error {
+	primID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", id)
+	}
+
+	update := bson.D{
+		{"$inc", bson.D{
+			{"prize", amount},
+		}},
+	}
+	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
+	if err != nil {
+		return errors.Wrap(err, "update doc in collection")
+	}
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc in collection: ModifiedCount != 1")
+	}
+
 	return nil
 }
 
 // DecreaseTournamentPrize func ...
 func (db *DB) DecreaseTournamentPrize(ctx context.Context, id string, amount float64) error {
+	primID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", id)
+	}
+
+	update := bson.D{
+		{"$inc", bson.D{
+			{"prize", -amount},
+		}},
+	}
+	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
+	if err != nil {
+		return errors.Wrap(err, "update doc in collection")
+	}
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc in collection: ModifiedCount != 1")
+	}
+
+	return nil
+}
+
+// SetTournamentStatus func ...
+func (db *DB) SetTournamentStatus(ctx context.Context, tournamentID, status string) error {
+	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
+	if err != nil {
+		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+	}
+
+	update := bson.D{
+		{"$set", bson.D{
+			{"status", status},
+		}},
+	}
+	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx,
+		bson.M{"_id": primTournamentID}, update)
+	if err != nil {
+		return errors.Wrap(err, "update doc in collection")
+	}
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc in collection: ModifiedCount != 1")
+	}
+
 	return nil
 }
