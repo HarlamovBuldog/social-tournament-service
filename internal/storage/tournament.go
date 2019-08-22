@@ -18,8 +18,8 @@ type Tournament struct {
 	Deposit float64            `json:"deposit" bson:"deposit"`
 	Status  string             `json:"status" bson:"status"`
 	Prize   float64            `json:"prize" bson:"prize"`
-	Users   []string           `json:"users" bson:"users"`
-	Winner  *User              `json:"winner" bson:"winner"`
+	Users   *[]string          `json:"users" bson:"users"`
+	Winner  string             `json:"winner" bson:"winner"`
 }
 
 // AddTournament func fills tournament info with provided name, provided deposit
@@ -29,6 +29,7 @@ func (db *DB) AddTournament(ctx context.Context, name string, deposit float64) (
 	insertResult, err := db.conn.Collection(tournamentsCollectionName).InsertOne(ctx, Tournament{
 		Name:    name,
 		Deposit: deposit,
+		Users:   &[]string{},
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "insert doc to collection")
@@ -84,20 +85,21 @@ func (db *DB) DeleteTournament(ctx context.Context, id string) error {
 	return nil
 }
 
+// AddUserToTournamentList func ..
 func (db *DB) AddUserToTournamentList(ctx context.Context, tournamentID, userID string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
 	}
 
-	primUserID, err := primitive.ObjectIDFromHex(userID)
+	_, err = primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", userID)
 	}
 
 	update := bson.D{
 		{"$addToSet", bson.D{
-			{"users", primUserID},
+			{"users", userID},
 		}},
 	}
 	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx,
@@ -113,20 +115,21 @@ func (db *DB) AddUserToTournamentList(ctx context.Context, tournamentID, userID 
 	return nil
 }
 
+// SetTournamentWinner func ..
 func (db *DB) SetTournamentWinner(ctx context.Context, tournamentID, userID string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
 	}
 
-	primUserID, err := primitive.ObjectIDFromHex(userID)
+	_, err = primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", userID)
 	}
 
 	update := bson.D{
 		{"$set", bson.D{
-			{"winner", primUserID},
+			{"winner", userID},
 		}},
 	}
 	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx,
