@@ -197,7 +197,7 @@ func (db *DB) DecreaseTournamentPrize(ctx context.Context, id string, amount flo
 func (db *DB) SetTournamentStatus(ctx context.Context, tournamentID, status string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
 	}
 
 	update := bson.D{
