@@ -85,7 +85,9 @@ func (db *DB) DeleteTournament(ctx context.Context, id string) error {
 	return nil
 }
 
-// AddUserToTournamentList func ..
+// AddUserToTournamentList func adds user with provided id to tournament users list with provided id.
+// Return error if smth wrong and nil if everything is ok.
+// userID and tournamentID should be correct ObjectID according to MongoDB docs.
 func (db *DB) AddUserToTournamentList(ctx context.Context, tournamentID, userID string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
@@ -115,7 +117,9 @@ func (db *DB) AddUserToTournamentList(ctx context.Context, tournamentID, userID 
 	return nil
 }
 
-// SetTournamentWinner func ..
+// SetTournamentWinner func sets winner of tournament found by tournamentID to user with userID.
+// Return error if smth wrong and nil if everything is ok.
+// userID and tournamentID should be correct ObjectID according to MongoDB docs.
 func (db *DB) SetTournamentWinner(ctx context.Context, tournamentID, userID string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
@@ -145,7 +149,9 @@ func (db *DB) SetTournamentWinner(ctx context.Context, tournamentID, userID stri
 	return nil
 }
 
-// IncreaseTournamentPrize func ...
+// IncreaseTournamentPrize func increase tournament's with provided id prize by provided amount.
+// Return error if smth wrong and nil if everything is ok.
+// id should be correct ObjectID according to MongoDB docs.
 func (db *DB) IncreaseTournamentPrize(ctx context.Context, id string, amount float64) error {
 	primID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -169,7 +175,9 @@ func (db *DB) IncreaseTournamentPrize(ctx context.Context, id string, amount flo
 	return nil
 }
 
-// DecreaseTournamentPrize func ...
+// DecreaseTournamentPrize func decrease tournament's with provided id prize by provided amount.
+// Return error if smth wrong and nil if everything is ok.
+// id should be correct ObjectID according to MongoDB docs.
 func (db *DB) DecreaseTournamentPrize(ctx context.Context, id string, amount float64) error {
 	primID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -193,7 +201,9 @@ func (db *DB) DecreaseTournamentPrize(ctx context.Context, id string, amount flo
 	return nil
 }
 
-// SetTournamentStatus func ...
+// SetTournamentStatus func sets tournament's with "id" status to "status"
+// Return error if smth wrong and nil if everything is ok.
+// tournamentID should be correct ObjectID according to MongoDB docs.
 func (db *DB) SetTournamentStatus(ctx context.Context, tournamentID, status string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
