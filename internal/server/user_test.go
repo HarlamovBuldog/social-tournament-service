@@ -21,8 +21,9 @@ func TestCreateNewUser_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	randomUserID := primitive.NewObjectID().Hex()
 	mock := storage.NewMockService(ctrl)
-	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Gennadiy")).Times(1).Return("code_str", nil)
+	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Gennadiy")).Times(1).Return(randomUserID, nil)
 
 	enc, err := json.Marshal(userNameJSON{
 		Name: "Gennadiy",
@@ -50,7 +51,7 @@ func TestCreateNewUser_Success(t *testing.T) {
 	var actualUserID userIDJSON
 	err = json.NewDecoder(w.Result().Body).Decode(&actualUserID)
 	require.NoError(err)
-	require.Equal(userIDJSON{ID: "code_str"}, actualUserID, "The two bodies shoud be the same")
+	require.Equal(userIDJSON{ID: randomUserID}, actualUserID, "The two bodies shoud be the same")
 }
 
 func TestCreateNewUser_DB_Fail(t *testing.T) {
