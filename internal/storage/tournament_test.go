@@ -27,7 +27,7 @@ func TestAddTournament(t *testing.T) {
 		ID:      expectedTournamentObjID,
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
-		Users:   &[]string{},
+		Users:   []primitive.ObjectID{},
 	}
 
 	require.Equal(expectedTournament, *actualTournament, "The two tournament objects should be the same")
@@ -52,7 +52,7 @@ func TestGetTournament(t *testing.T) {
 		ID:      expectedTournamentObjID,
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
-		Users:   &[]string{},
+		Users:   []primitive.ObjectID{},
 	}
 
 	require.Equal(expectedTournament, *actualTournament, "The two tournament objects should be the same")
@@ -98,8 +98,8 @@ func TestAddUserToTournamentList(t *testing.T) {
 	require := require.New(t)
 	require.NoError(err)
 
-	userID := primitive.NewObjectID().Hex()
-	err = db.AddUserToTournamentList(context.TODO(), expectedTournamentID, userID)
+	userID := primitive.NewObjectID()
+	err = db.AddUserToTournamentList(context.TODO(), expectedTournamentID, userID.Hex())
 	require.NoError(err)
 
 	actualTournament, err := db.GetTournament(context.TODO(), expectedTournamentID)
@@ -112,13 +112,13 @@ func TestAddUserToTournamentList(t *testing.T) {
 		ID:      expectedTournamentObjID,
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
-		Users:   &[]string{userID},
+		Users:   []primitive.ObjectID{userID},
 	}
 
 	require.Equal(expectedTournament, *actualTournament, "The two tournament objects should be the same")
 
 	badTournamentID := "bad_t_id"
-	err = db.AddUserToTournamentList(context.TODO(), badTournamentID, userID)
+	err = db.AddUserToTournamentList(context.TODO(), badTournamentID, userID.Hex())
 	require.EqualError(err, fmt.Sprintf("convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badTournamentID))
 
 	badUserID := "bad_user_id"
@@ -126,7 +126,7 @@ func TestAddUserToTournamentList(t *testing.T) {
 	require.EqualError(err, fmt.Sprintf("convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badUserID))
 
 	notExistTournamentID := primitive.NewObjectID().Hex()
-	err = db.AddUserToTournamentList(context.TODO(), notExistTournamentID, userID)
+	err = db.AddUserToTournamentList(context.TODO(), notExistTournamentID, userID.Hex())
 	require.EqualError(err, "update doc in collection: ModifiedCount != 1")
 
 	cleanUp(t)
@@ -139,8 +139,8 @@ func TestSetTournamentWinner(t *testing.T) {
 	require := require.New(t)
 	require.NoError(err)
 
-	userWinnerID := primitive.NewObjectID().Hex()
-	err = db.SetTournamentWinner(context.TODO(), expectedTournamentID, userWinnerID)
+	userWinnerID := primitive.NewObjectID()
+	err = db.SetTournamentWinner(context.TODO(), expectedTournamentID, userWinnerID.Hex())
 	require.NoError(err)
 
 	actualTournament, err := db.GetTournament(context.TODO(), expectedTournamentID)
@@ -153,14 +153,14 @@ func TestSetTournamentWinner(t *testing.T) {
 		ID:      expectedTournamentObjID,
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
-		Users:   &[]string{},
+		Users:   []primitive.ObjectID{},
 		Winner:  userWinnerID,
 	}
 
 	require.Equal(expectedTournament, *actualTournament, "The two tournament objects should be the same")
 
 	badTournamentID := "bad_t_id"
-	err = db.SetTournamentWinner(context.TODO(), badTournamentID, userWinnerID)
+	err = db.SetTournamentWinner(context.TODO(), badTournamentID, userWinnerID.Hex())
 	require.EqualError(err, fmt.Sprintf("convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badTournamentID))
 
 	badUserID := "bad_user_id"
@@ -168,7 +168,7 @@ func TestSetTournamentWinner(t *testing.T) {
 	require.EqualError(err, fmt.Sprintf("convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badUserID))
 
 	notExistTournamentID := primitive.NewObjectID().Hex()
-	err = db.SetTournamentWinner(context.TODO(), notExistTournamentID, userWinnerID)
+	err = db.SetTournamentWinner(context.TODO(), notExistTournamentID, userWinnerID.Hex())
 	require.EqualError(err, "update doc in collection: ModifiedCount != 1")
 
 	cleanUp(t)
@@ -196,7 +196,7 @@ func TestIncreaseTournamentPrize(t *testing.T) {
 		ID:      expectedTournamentObjID,
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
-		Users:   &[]string{},
+		Users:   []primitive.ObjectID{},
 		Prize:   expectedTournamentPrize,
 	}
 
@@ -239,7 +239,7 @@ func TestDecreaseTournamentPrize(t *testing.T) {
 		ID:      expectedTournamentObjID,
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
-		Users:   &[]string{},
+		Users:   []primitive.ObjectID{},
 		Prize:   expectedTournamentPrize,
 	}
 

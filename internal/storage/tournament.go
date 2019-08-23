@@ -13,13 +13,13 @@ import (
 // with deposit to enter and prize as a product of number
 // of all players by deposit for winner.
 type Tournament struct {
-	ID      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name    string             `json:"name" bson:"name"`
-	Deposit float64            `json:"deposit" bson:"deposit"`
-	Status  string             `json:"status" bson:"status"`
-	Prize   float64            `json:"prize" bson:"prize"`
-	Users   *[]string          `json:"users" bson:"users"`
-	Winner  string             `json:"winner" bson:"winner"`
+	ID      primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
+	Name    string               `json:"name" bson:"name"`
+	Deposit float64              `json:"deposit" bson:"deposit"`
+	Status  string               `json:"status" bson:"status"`
+	Prize   float64              `json:"prize" bson:"prize"`
+	Users   []primitive.ObjectID `json:"users" bson:"users"`
+	Winner  primitive.ObjectID   `json:"winner" bson:"winner"`
 }
 
 // AddTournament func fills tournament info with provided name, provided deposit
@@ -29,7 +29,7 @@ func (db *DB) AddTournament(ctx context.Context, name string, deposit float64) (
 	insertResult, err := db.conn.Collection(tournamentsCollectionName).InsertOne(ctx, Tournament{
 		Name:    name,
 		Deposit: deposit,
-		Users:   &[]string{},
+		Users:   []primitive.ObjectID{},
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "insert doc to collection")
@@ -92,14 +92,14 @@ func (db *DB) AddUserToTournamentList(ctx context.Context, tournamentID, userID 
 		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
 	}
 
-	_, err = primitive.ObjectIDFromHex(userID)
+	primUserID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", userID)
 	}
 
 	update := bson.D{
 		{"$addToSet", bson.D{
-			{"users", userID},
+			{"users", primUserID},
 		}},
 	}
 	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx,
@@ -122,14 +122,14 @@ func (db *DB) SetTournamentWinner(ctx context.Context, tournamentID, userID stri
 		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
 	}
 
-	_, err = primitive.ObjectIDFromHex(userID)
+	primUserID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", userID)
 	}
 
 	update := bson.D{
 		{"$set", bson.D{
-			{"winner", userID},
+			{"winner", primUserID},
 		}},
 	}
 	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx,
