@@ -46,5 +46,6 @@ type Service interface {
 	IncreaseTournamentPrize(ctx context.Context, id string, amount float64) error
 	DecreaseTournamentPrize(ctx context.Context, id string, amount float64) error
 	SetTournamentWinner(ctx context.Context, tournamentID, userID string) error
+	SetTournamentStatus(ctx context.Context, tournamentID, status string) error
 	AddUserToTournamentList(ctx context.Context, tournamentID, userID string) error
 }

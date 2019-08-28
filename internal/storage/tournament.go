@@ -13,13 +13,13 @@ import (
 // with deposit to enter and prize as a product of number
 // of all players by deposit for winner.
 type Tournament struct {
-	ID      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name    string             `json:"name" bson:"name"`
-	Deposit float64            `json:"deposit" bson:"deposit"`
-	Status  string             `json:"status" bson:"status"`
-	Prize   float64            `json:"prize" bson:"prize"`
-	Users   []string           `json:"users" bson:"users"`
-	Winner  *User              `json:"winner" bson:"winner"`
+	ID      primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
+	Name    string               `json:"name" bson:"name"`
+	Deposit float64              `json:"deposit" bson:"deposit"`
+	Status  string               `json:"status" bson:"status"`
+	Prize   float64              `json:"prize" bson:"prize"`
+	Users   []primitive.ObjectID `json:"users" bson:"users"`
+	Winner  primitive.ObjectID   `json:"winner" bson:"winner"`
 }
 
 // AddTournament func fills tournament info with provided name, provided deposit
@@ -29,6 +29,7 @@ func (db *DB) AddTournament(ctx context.Context, name string, deposit float64) (
 	insertResult, err := db.conn.Collection(tournamentsCollectionName).InsertOne(ctx, Tournament{
 		Name:    name,
 		Deposit: deposit,
+		Users:   []primitive.ObjectID{},
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "insert doc to collection")
@@ -84,15 +85,18 @@ func (db *DB) DeleteTournament(ctx context.Context, id string) error {
 	return nil
 }
 
+// AddUserToTournamentList func adds user with provided id to tournament users list with provided id.
+// Return error if smth wrong and nil if everything is ok.
+// userID and tournamentID should be correct ObjectID according to MongoDB docs.
 func (db *DB) AddUserToTournamentList(ctx context.Context, tournamentID, userID string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
 	}
 
 	primUserID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", userID)
 	}
 
 	update := bson.D{
@@ -113,15 +117,18 @@ func (db *DB) AddUserToTournamentList(ctx context.Context, tournamentID, userID 
 	return nil
 }
 
+// SetTournamentWinner func sets winner of tournament found by tournamentID to user with userID.
+// Return error if smth wrong and nil if everything is ok.
+// userID and tournamentID should be correct ObjectID according to MongoDB docs.
 func (db *DB) SetTournamentWinner(ctx context.Context, tournamentID, userID string) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
 	}
 
 	primUserID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return errors.Wrap(err, "convert string value to primitive.ObjectID type")
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", userID)
 	}
 
 	update := bson.D{
@@ -142,12 +149,81 @@ func (db *DB) SetTournamentWinner(ctx context.Context, tournamentID, userID stri
 	return nil
 }
 
-// IncreaseTournamentPrize func ...
+// IncreaseTournamentPrize func increase tournament's with provided id prize by provided amount.
+// Return error if smth wrong and nil if everything is ok.
+// id should be correct ObjectID according to MongoDB docs.
 func (db *DB) IncreaseTournamentPrize(ctx context.Context, id string, amount float64) error {
+	primID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", id)
+	}
+
+	update := bson.D{
+		{"$inc", bson.D{
+			{"prize", amount},
+		}},
+	}
+	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
+	if err != nil {
+		return errors.Wrap(err, "update doc in collection")
+	}
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc in collection: ModifiedCount != 1")
+	}
+
 	return nil
 }
 
-// DecreaseTournamentPrize func ...
+// DecreaseTournamentPrize func decrease tournament's with provided id prize by provided amount.
+// Return error if smth wrong and nil if everything is ok.
+// id should be correct ObjectID according to MongoDB docs.
 func (db *DB) DecreaseTournamentPrize(ctx context.Context, id string, amount float64) error {
+	primID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", id)
+	}
+
+	update := bson.D{
+		{"$inc", bson.D{
+			{"prize", -amount},
+		}},
+	}
+	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx, bson.M{"_id": primID}, update)
+	if err != nil {
+		return errors.Wrap(err, "update doc in collection")
+	}
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc in collection: ModifiedCount != 1")
+	}
+
+	return nil
+}
+
+// SetTournamentStatus func sets tournament's with "id" status to "status"
+// Return error if smth wrong and nil if everything is ok.
+// tournamentID should be correct ObjectID according to MongoDB docs.
+func (db *DB) SetTournamentStatus(ctx context.Context, tournamentID, status string) error {
+	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
+	if err != nil {
+		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)
+	}
+
+	update := bson.D{
+		{"$set", bson.D{
+			{"status", status},
+		}},
+	}
+	updateResult, err := db.conn.Collection(tournamentsCollectionName).UpdateOne(ctx,
+		bson.M{"_id": primTournamentID}, update)
+	if err != nil {
+		return errors.Wrap(err, "update doc in collection")
+	}
+
+	if updateResult.ModifiedCount != 1 {
+		return errors.New("update doc in collection: ModifiedCount != 1")
+	}
+
 	return nil
 }
