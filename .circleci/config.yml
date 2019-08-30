@@ -16,8 +16,17 @@ jobs:
       - checkout
       - run: go build -mod=vendor ./...
   test:
-    executor: my-executor
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/go/src/github.com/HarlamovBuldog/social-tournament-service
     steps:
+      - run:
+          name: Update Go to 1.12.6
+          working_directory: /tmp
+          command: |-
+            wget https://dl.google.com/go/go1.12.6.linux-amd64.tar.gz
+            sudo rm -rf /usr/local/go
+            sudo tar -C /usr/local -xzf go1.12.6.linux-amd64.tar.gz
       - checkout
       - run: go test -v ./...
   create-push-docker-image:
