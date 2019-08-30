@@ -4,9 +4,10 @@ executors:
   my-executor:
     environment: 
       IMAGE_NAME: vladwoode/social-tournament-service
-      GO111MODULE: on
     docker:
       - image: circleci/golang:1.12
+        environment:
+          - GO111MODULE=on
     working_directory: /go/src/github.com/HarlamovBuldog/social-tournament-service
 
 jobs:
@@ -16,10 +17,19 @@ jobs:
       - checkout
       - run: go build -mod=vendor ./...
   test:
-    executor: my-executor
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/go/src/github.com/HarlamovBuldog/social-tournament-service
     steps:
+      - run:
+          name: Update Go to 1.12.6
+          working_directory: /tmp
+          command: |-
+            wget https://dl.google.com/go/go1.12.6.linux-amd64.tar.gz
+            sudo rm -rf /usr/local/go
+            sudo tar -C /usr/local -xzf go1.12.6.linux-amd64.tar.gz
       - checkout
-      - run: go test -v ./...
+      - run: env GO111MODULE=on go test -mod=vendor -v -cover ./...
   create-push-docker-image:
     executor: my-executor
     steps:
@@ -29,7 +39,7 @@ jobs:
           name: Build Docker image
           command: |
             IMAGE_TAG=${CIRCLE_TAG/v/''}
-            docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile.multistage .
+            docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
       - run:
           name: Publish Docker Image to Docker Hub
           command: |

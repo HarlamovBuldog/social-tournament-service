@@ -92,7 +92,7 @@ func setupDB() (*Container, error) {
 		}
 		i++
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		writeConnectionString := fmt.Sprintf("mongodb://localhost:%s", posPort)
 
@@ -102,7 +102,7 @@ func setupDB() (*Container, error) {
 			log.Printf("error connecting to mongo client: %s", err)
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 		defer cancel()
 		err = client.Ping(ctx, nil)
 		if err != nil {
