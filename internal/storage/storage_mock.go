@@ -191,3 +191,27 @@ func (_m *MockService) AddUserToTournamentList(ctx context.Context, tournamentID
 func (_mr *MockServiceMockRecorder) AddUserToTournamentList(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "AddUserToTournamentList", reflect.TypeOf((*MockService)(nil).AddUserToTournamentList), arg0, arg1, arg2)
 }
+
+// JoinTournament mocks base method
+func (_m *MockService) JoinTournament(ctx context.Context, tournamentID string, userID string) error {
+	ret := _m.ctrl.Call(_m, "JoinTournament", ctx, tournamentID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// JoinTournament indicates an expected call of JoinTournament
+func (_mr *MockServiceMockRecorder) JoinTournament(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "JoinTournament", reflect.TypeOf((*MockService)(nil).JoinTournament), arg0, arg1, arg2)
+}
+
+// FinishTournament mocks base method
+func (_m *MockService) FinishTournament(ctx context.Context, tournamentID string) error {
+	ret := _m.ctrl.Call(_m, "FinishTournament", ctx, tournamentID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FinishTournament indicates an expected call of FinishTournament
+func (_mr *MockServiceMockRecorder) FinishTournament(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "FinishTournament", reflect.TypeOf((*MockService)(nil).FinishTournament), arg0, arg1)
+}
