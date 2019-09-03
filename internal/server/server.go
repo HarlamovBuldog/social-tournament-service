@@ -14,24 +14,24 @@ type Server struct {
 	service storage.Service
 }
 
-type userIDJSON struct {
+type userID struct {
 	ID string `json:"userID"`
 }
 
-type userNameJSON struct {
+type userName struct {
 	Name string `json:"name"`
 }
 
-type userPointsJSON struct {
+type userPoints struct {
 	Points float64 `json:"points"`
 }
 
-type tournamentInitJSON struct {
+type tournamentInit struct {
 	Name    string  `json:"name"`
 	Deposit float64 `json:"deposit"`
 }
 
-type tournamentIDJSON struct {
+type tournamentID struct {
 	ID string `json:"id"`
 }
 
@@ -59,7 +59,7 @@ func NewServer(db storage.Service) *Server {
 }
 
 func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
-	var user userNameJSON
+	var user userName
 	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -67,15 +67,15 @@ func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userID, err := s.service.AddUser(req.Context(), user.Name)
+	usrID, err := s.service.AddUser(req.Context(), user.Name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("error createNewUser: %v", err)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(userIDJSON{
-		ID: userID,
+	err = json.NewEncoder(w).Encode(userID{
+		ID: usrID,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -124,7 +124,7 @@ func (s *Server) removeUser(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
-	var points userPointsJSON
+	var points userPoints
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -149,7 +149,7 @@ func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
-	var points userPointsJSON
+	var points userPoints
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -174,7 +174,7 @@ func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) createNewTournament(w http.ResponseWriter, req *http.Request) {
-	var tournament tournamentInitJSON
+	var tournament tournamentInit
 	err := json.NewDecoder(req.Body).Decode(&tournament)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -182,15 +182,15 @@ func (s *Server) createNewTournament(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tournamentID, err := s.service.AddTournament(req.Context(), tournament.Name, tournament.Deposit)
+	tourneyID, err := s.service.AddTournament(req.Context(), tournament.Name, tournament.Deposit)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("createNewTournament: %s", err)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(tournamentIDJSON{
-		ID: tournamentID,
+	err = json.NewEncoder(w).Encode(tournamentID{
+		ID: tourneyID,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -223,7 +223,7 @@ func (s *Server) getTournamentInfo(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) joinTournament(w http.ResponseWriter, req *http.Request) {
-	var userID userIDJSON
+	var userID userID
 	err := json.NewDecoder(req.Body).Decode(&userID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

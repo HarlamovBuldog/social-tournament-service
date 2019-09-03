@@ -29,7 +29,7 @@ func TestCreateNewTournament_Success(t *testing.T) {
 	mock.EXPECT().AddTournament(gomock.Any(), gomock.Eq(expectedTournamentName),
 		gomock.Eq(expectedTournamentDeposit)).Times(1).Return(expectedTournamentID, nil)
 
-	enc, err := json.Marshal(tournamentInitJSON{
+	enc, err := json.Marshal(tournamentInit{
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
 	})
@@ -47,10 +47,10 @@ func TestCreateNewTournament_Success(t *testing.T) {
 	actualCode := w.Result().StatusCode
 	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
 
-	var actualtournamentID tournamentIDJSON
+	var actualtournamentID tournamentID
 	err = json.NewDecoder(w.Result().Body).Decode(&actualtournamentID)
 	require.NoError(err)
-	require.Equal(tournamentIDJSON{ID: expectedTournamentID}, actualtournamentID, "The two bodies shoud be the same")
+	require.Equal(tournamentID{ID: expectedTournamentID}, actualtournamentID, "The two bodies shoud be the same")
 }
 
 func TestCreateNewTournament_DB_Fail(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCreateNewTournament_DB_Fail(t *testing.T) {
 	mock.EXPECT().AddTournament(gomock.Any(), gomock.Eq(expectedTournamentName),
 		gomock.Eq(expectedTournamentDeposit)).Times(1).Return("", expectedError)
 
-	enc, err := json.Marshal(tournamentInitJSON{
+	enc, err := json.Marshal(tournamentInit{
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
 	})
@@ -190,7 +190,7 @@ func TestJoinTournament_Success(t *testing.T) {
 		Times(1).Return(nil)
 
 	expectedURLPath := fmt.Sprintf("/tournament/%s/join", expectedTournamentID)
-	enc, err := json.Marshal(userIDJSON{
+	enc, err := json.Marshal(userID{
 		ID: expectedUserID,
 	})
 	require := require.New(t)
@@ -220,7 +220,7 @@ func TestJoinTournament_DB_Fail(t *testing.T) {
 		Times(1).Return(expectedError)
 
 	expectedURLPath := fmt.Sprintf("/tournament/%s/join", expectedTournamentID)
-	enc, err := json.Marshal(userIDJSON{
+	enc, err := json.Marshal(userID{
 		ID: expectedUserID,
 	})
 	require := require.New(t)
@@ -247,7 +247,7 @@ func TestJoinTournament_Bad_Req(t *testing.T) {
 
 	badURLPath := fmt.Sprint("/tournament/")
 	expectedUserID := primitive.NewObjectID().Hex()
-	enc, err := json.Marshal(userIDJSON{
+	enc, err := json.Marshal(userID{
 		ID: expectedUserID,
 	})
 	require := require.New(t)
