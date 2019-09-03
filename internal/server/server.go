@@ -223,8 +223,8 @@ func (s *Server) getTournamentInfo(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) joinTournament(w http.ResponseWriter, req *http.Request) {
-	var userID userID
-	err := json.NewDecoder(req.Body).Decode(&userID)
+	var usrID userID
+	err := json.NewDecoder(req.Body).Decode(&usrID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("joinTournament: can't decode request body: %s", err)
@@ -239,7 +239,7 @@ func (s *Server) joinTournament(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = s.service.JoinTournament(req.Context(), tournamentID, userID.ID)
+	err = s.service.JoinTournament(req.Context(), tournamentID, usrID.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("joinTournament: %s", err)

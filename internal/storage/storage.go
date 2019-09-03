@@ -32,24 +32,26 @@ func (db *DB) JoinTournament(ctx context.Context, tournamentID, userID string) e
 	if err != nil {
 		return errors.Wrap(err, "error start mongoDB session")
 	}
-	if err = session.StartTransaction(); err != nil {
+	if err := session.StartTransaction(); err != nil {
 		return errors.Wrap(err, "error start transaction")
 	}
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
 		if err := db.AddUserToTournamentList(sc, tournamentID, userID); err != nil {
 			return errors.Wrap(err, "AddUserToTournamentList")
 		}
 
-		tournament, err := db.GetTournament(sc, tournamentID)
-		if err != nil {
+		var deposit float64
+		if tournament, err := db.GetTournament(sc, tournamentID); err == nil {
+			deposit = tournament.Deposit
+		} else {
 			return errors.Wrap(err, "GetTournament")
 		}
 
-		if err := db.IncreaseTournamentPrize(sc, tournamentID, tournament.Deposit); err != nil {
+		if err := db.IncreaseTournamentPrize(sc, tournamentID, deposit); err != nil {
 			return errors.Wrap(err, "IncreaseTournamentPrize")
 		}
 
-		if err = session.CommitTransaction(sc); err != nil {
+		if err := session.CommitTransaction(sc); err != nil {
 			return errors.Wrap(err, "commit transaction")
 		}
 
@@ -67,11 +69,11 @@ func (db *DB) FinishTournament(ctx context.Context, tournamentID string) error {
 	if err != nil {
 		return errors.Wrap(err, "error start mongoDB session")
 	}
-	if err = session.StartTransaction(); err != nil {
+	if err := session.StartTransaction(); err != nil {
 		return errors.Wrap(err, "error start transaction")
 	}
 	status := "finished"
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
 		if err := db.SetTournamentStatus(sc, tournamentID, status); err != nil {
 			return errors.Wrap(err, "SetTournamentStatus")
 		}
@@ -81,17 +83,18 @@ func (db *DB) FinishTournament(ctx context.Context, tournamentID string) error {
 			return errors.Wrap(err, "SetTournamentWinner")
 		}
 
-		tournament, err := db.GetTournament(sc, tournamentID)
-		if err != nil {
+		var prize float64
+		if tournament, err := db.GetTournament(sc, tournamentID); err == nil {
+			prize = tournament.Prize
+		} else {
 			return errors.Wrap(err, "GetTournament")
 		}
 
-		err = db.FundUserBalance(sc, userID.Hex(), tournament.Prize)
-		if err != nil {
+		if err := db.FundUserBalance(sc, userID.Hex(), prize); err != nil {
 			return errors.Wrap(err, "FundUserBalance")
 		}
 
-		if err = session.CommitTransaction(sc); err != nil {
+		if err := session.CommitTransaction(sc); err != nil {
 			return errors.Wrap(err, "commit transaction")
 		}
 
