@@ -16,11 +16,19 @@ type Tournament struct {
 	ID      primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
 	Name    string               `json:"name" bson:"name"`
 	Deposit float64              `json:"deposit" bson:"deposit"`
-	Status  string               `json:"status" bson:"status"`
+	Status  TournamentStatus     `json:"status" bson:"status"`
 	Prize   float64              `json:"prize" bson:"prize"`
 	Users   []primitive.ObjectID `json:"users" bson:"users"`
 	Winner  primitive.ObjectID   `json:"winner" bson:"winner"`
 }
+
+type TournamentStatus string
+
+const (
+	StatusFinished TournamentStatus = "finished"
+	StatusStarted  TournamentStatus = "started"
+	StatusSignIn   TournamentStatus = "signIn"
+)
 
 // AddTournament func fills tournament info with provided name, provided deposit
 // and with automatically generated id, then adds generated tournament info to database.
@@ -204,7 +212,7 @@ func (db *DB) DecreaseTournamentPrize(ctx context.Context, id string, amount flo
 // SetTournamentStatus func sets tournament's with "id" status to "status"
 // Return error if smth wrong and nil if everything is ok.
 // tournamentID should be correct ObjectID according to MongoDB docs.
-func (db *DB) SetTournamentStatus(ctx context.Context, tournamentID, status string) error {
+func (db *DB) SetTournamentStatus(ctx context.Context, tournamentID string, status TournamentStatus) error {
 	primTournamentID, err := primitive.ObjectIDFromHex(tournamentID)
 	if err != nil {
 		return errors.Wrapf(err, "convert string %s to primitive.ObjectID type", tournamentID)

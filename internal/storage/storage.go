@@ -72,9 +72,9 @@ func (db *DB) FinishTournament(ctx context.Context, tournamentID, winnerUserID s
 	if err := session.StartTransaction(); err != nil {
 		return errors.Wrap(err, "error start transaction")
 	}
-	status := "finished"
+
 	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
-		if err := db.SetTournamentStatus(sc, tournamentID, status); err != nil {
+		if err := db.SetTournamentStatus(sc, tournamentID, StatusFinished); err != nil {
 			return errors.Wrap(err, "SetTournamentStatus")
 		}
 
@@ -130,7 +130,7 @@ type Service interface {
 	IncreaseTournamentPrize(ctx context.Context, id string, amount float64) error
 	DecreaseTournamentPrize(ctx context.Context, id string, amount float64) error
 	SetTournamentWinner(ctx context.Context, tournamentID, userID string) error
-	SetTournamentStatus(ctx context.Context, tournamentID, status string) error
+	SetTournamentStatus(ctx context.Context, tournamentID string, status TournamentStatus) error
 	AddUserToTournamentList(ctx context.Context, tournamentID, userID string) error
 
 	JoinTournament(ctx context.Context, tournamentID, userID string) error

@@ -263,8 +263,8 @@ func TestSetTournamentStatus(t *testing.T) {
 	require := require.New(t)
 	require.NoError(err)
 
-	status := "status"
-	err = db.SetTournamentStatus(context.TODO(), expectedTournamentID, status)
+	expectedStatus := StatusFinished
+	err = db.SetTournamentStatus(context.TODO(), expectedTournamentID, expectedStatus)
 	require.NoError(err)
 
 	actualTournament, err := db.GetTournament(context.TODO(), expectedTournamentID)
@@ -278,17 +278,17 @@ func TestSetTournamentStatus(t *testing.T) {
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
 		Users:   []primitive.ObjectID{},
-		Status:  status,
+		Status:  expectedStatus,
 	}
 
 	require.Equal(expectedTournament, *actualTournament, "The two tournament objects should be the same")
 
 	badTournamentID := "bad_t_id"
-	err = db.SetTournamentStatus(context.TODO(), badTournamentID, status)
+	err = db.SetTournamentStatus(context.TODO(), badTournamentID, expectedStatus)
 	require.EqualError(err, fmt.Sprintf("convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badTournamentID))
 
 	notExistTournamentID := primitive.NewObjectID().Hex()
-	err = db.SetTournamentStatus(context.TODO(), notExistTournamentID, status)
+	err = db.SetTournamentStatus(context.TODO(), notExistTournamentID, expectedStatus)
 	require.EqualError(err, "update doc in collection: ModifiedCount != 1")
 
 	cleanUp(t)

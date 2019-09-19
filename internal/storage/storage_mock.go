@@ -169,7 +169,7 @@ func (_mr *MockServiceMockRecorder) SetTournamentWinner(arg0, arg1, arg2 interfa
 }
 
 // SetTournamentStatus mocks base method
-func (_m *MockService) SetTournamentStatus(ctx context.Context, tournamentID string, status string) error {
+func (_m *MockService) SetTournamentStatus(ctx context.Context, tournamentID string, status TournamentStatus) error {
 	ret := _m.ctrl.Call(_m, "SetTournamentStatus", ctx, tournamentID, status)
 	ret0, _ := ret[0].(error)
 	return ret0
