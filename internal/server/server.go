@@ -18,6 +18,9 @@ type userID struct {
 	ID string `json:"userID"`
 }
 
+type winnerUserID struct {
+	ID string `json:"winnerUserID"`
+}
 type userName struct {
 	Name string `json:"name"`
 }
@@ -248,6 +251,14 @@ func (s *Server) joinTournament(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) finishTournament(w http.ResponseWriter, req *http.Request) {
+	var winnerUsrID winnerUserID
+	err := json.NewDecoder(req.Body).Decode(&winnerUsrID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("finishTournament: can't decode request body: %s", err)
+		return
+	}
+
 	vars := mux.Vars(req)
 	tournamentID, ok := vars["id"]
 	if !ok {
@@ -256,7 +267,7 @@ func (s *Server) finishTournament(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err := s.service.FinishTournament(req.Context(), tournamentID)
+	err = s.service.FinishTournament(req.Context(), tournamentID, winnerUsrID.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("finishTournament: %s", err)

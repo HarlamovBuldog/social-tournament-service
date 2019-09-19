@@ -205,13 +205,13 @@ func (_mr *MockServiceMockRecorder) JoinTournament(arg0, arg1, arg2 interface{})
 }
 
 // FinishTournament mocks base method
-func (_m *MockService) FinishTournament(ctx context.Context, tournamentID string) error {
-	ret := _m.ctrl.Call(_m, "FinishTournament", ctx, tournamentID)
+func (_m *MockService) FinishTournament(ctx context.Context, tournamentID string, winnerUserID string) error {
+	ret := _m.ctrl.Call(_m, "FinishTournament", ctx, tournamentID, winnerUserID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // FinishTournament indicates an expected call of FinishTournament
-func (_mr *MockServiceMockRecorder) FinishTournament(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "FinishTournament", reflect.TypeOf((*MockService)(nil).FinishTournament), arg0, arg1)
+func (_mr *MockServiceMockRecorder) FinishTournament(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "FinishTournament", reflect.TypeOf((*MockService)(nil).FinishTournament), arg0, arg1, arg2)
 }

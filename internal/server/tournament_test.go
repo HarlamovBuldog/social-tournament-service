@@ -270,10 +270,19 @@ func TestFinishTournament_Success(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	tournamentID := primitive.NewObjectID().Hex()
-	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Eq(tournamentID)).Times(1).Return(nil)
+	winnerUsrID := primitive.NewObjectID().Hex()
+	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Eq(tournamentID), gomock.Eq(winnerUsrID)).
+		Times(1).Return(nil)
 
 	expectedURLPath := fmt.Sprintf("/tournament/%s/finish", tournamentID)
-	req := httptest.NewRequest("POST", expectedURLPath, nil)
+	enc, err := json.Marshal(winnerUserID{
+		ID: winnerUsrID,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	req := httptest.NewRequest("POST", expectedURLPath, b)
 	req = mux.SetURLVars(req, map[string]string{"id": tournamentID})
 	w := httptest.NewRecorder()
 
@@ -281,7 +290,7 @@ func TestFinishTournament_Success(t *testing.T) {
 	s.finishTournament(w, req)
 
 	actualCode := w.Result().StatusCode
-	require.Equal(t, http.StatusOK, actualCode, "The two http codes should be the same")
+	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
 }
 
 func TestFinishTournament_DB_Fail(t *testing.T) {
@@ -290,11 +299,20 @@ func TestFinishTournament_DB_Fail(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	tournamentID := primitive.NewObjectID().Hex()
+	winnerUsrID := primitive.NewObjectID().Hex()
 	expectedError := errors.New("any error cause it's transaction")
-	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Eq(tournamentID)).Times(1).Return(expectedError)
+	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Eq(tournamentID), gomock.Eq(winnerUsrID)).
+		Times(1).Return(expectedError)
 
 	expectedURLPath := fmt.Sprintf("/tournament/%s/finish", tournamentID)
-	req := httptest.NewRequest("POST", expectedURLPath, nil)
+	enc, err := json.Marshal(winnerUserID{
+		ID: winnerUsrID,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	req := httptest.NewRequest("POST", expectedURLPath, b)
 	req = mux.SetURLVars(req, map[string]string{"id": tournamentID})
 	w := httptest.NewRecorder()
 
@@ -302,7 +320,7 @@ func TestFinishTournament_DB_Fail(t *testing.T) {
 	s.finishTournament(w, req)
 
 	actualCode := w.Result().StatusCode
-	require.Equal(t, http.StatusInternalServerError, actualCode, "The two http codes should be the same")
+	require.Equal(http.StatusInternalServerError, actualCode, "The two http codes should be the same")
 }
 
 func TestFinishTournament_Bad_Req(t *testing.T) {
@@ -310,10 +328,18 @@ func TestFinishTournament_Bad_Req(t *testing.T) {
 	defer ctrl.Finish()
 
 	mock := storage.NewMockService(ctrl)
-	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Any()).Times(0)
+	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	badURLPath := "/tournament/finish"
-	req := httptest.NewRequest("POST", badURLPath, nil)
+	winnerUsrID := primitive.NewObjectID().Hex()
+	enc, err := json.Marshal(winnerUserID{
+		ID: winnerUsrID,
+	})
+	require := require.New(t)
+	require.NoError(err)
+
+	b := bytes.NewBuffer(enc)
+	req := httptest.NewRequest("POST", badURLPath, b)
 	req = mux.SetURLVars(req, map[string]string{})
 	w := httptest.NewRecorder()
 
@@ -321,7 +347,7 @@ func TestFinishTournament_Bad_Req(t *testing.T) {
 	s.finishTournament(w, req)
 
 	actualCode := w.Result().StatusCode
-	require.Equal(t, http.StatusBadRequest, actualCode, "The two http codes should be the same")
+	require.Equal(http.StatusBadRequest, actualCode, "The two http codes should be the same")
 }
 
 func TestCancelTournament_Success(t *testing.T) {

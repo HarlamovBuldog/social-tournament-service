@@ -64,7 +64,7 @@ func (db *DB) JoinTournament(ctx context.Context, tournamentID, userID string) e
 	return nil
 }
 
-func (db *DB) FinishTournament(ctx context.Context, tournamentID string) error {
+func (db *DB) FinishTournament(ctx context.Context, tournamentID, winnerUserID string) error {
 	session, err := db.conn.Client().StartSession()
 	if err != nil {
 		return errors.Wrap(err, "error start mongoDB session")
@@ -77,8 +77,8 @@ func (db *DB) FinishTournament(ctx context.Context, tournamentID string) error {
 		if err := db.SetTournamentStatus(sc, tournamentID, status); err != nil {
 			return errors.Wrap(err, "SetTournamentStatus")
 		}
-		userID := primitive.NewObjectID()
-		err := db.SetTournamentWinner(sc, tournamentID, userID.Hex())
+
+		err := db.SetTournamentWinner(sc, tournamentID, winnerUserID)
 		if err != nil {
 			return errors.Wrap(err, "SetTournamentWinner")
 		}
@@ -90,7 +90,7 @@ func (db *DB) FinishTournament(ctx context.Context, tournamentID string) error {
 			return errors.Wrap(err, "GetTournament")
 		}
 
-		if err := db.FundUserBalance(sc, userID.Hex(), prize); err != nil {
+		if err := db.FundUserBalance(sc, winnerUserID, tournament.Prize); err != nil {
 			return errors.Wrap(err, "FundUserBalance")
 		}
 
@@ -134,5 +134,5 @@ type Service interface {
 	AddUserToTournamentList(ctx context.Context, tournamentID, userID string) error
 
 	JoinTournament(ctx context.Context, tournamentID, userID string) error
-	FinishTournament(ctx context.Context, tournamentID string) error
+	FinishTournament(ctx context.Context, tournamentID, winnerUserID string) error
 }
