@@ -29,7 +29,7 @@ func TestCreateNewTournament_Success(t *testing.T) {
 	mock.EXPECT().AddTournament(gomock.Any(), gomock.Eq(expectedTournamentName),
 		gomock.Eq(expectedTournamentDeposit)).Times(1).Return(expectedTournamentID, nil)
 
-	enc, err := json.Marshal(tournamentInit{
+	enc, err := json.Marshal(tournament{
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
 	})
@@ -65,7 +65,7 @@ func TestCreateNewTournament_DB_Fail(t *testing.T) {
 	mock.EXPECT().AddTournament(gomock.Any(), gomock.Eq(expectedTournamentName),
 		gomock.Eq(expectedTournamentDeposit)).Times(1).Return("", expectedError)
 
-	enc, err := json.Marshal(tournamentInit{
+	enc, err := json.Marshal(tournament{
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit,
 	})

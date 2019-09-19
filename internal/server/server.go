@@ -21,6 +21,7 @@ type userID struct {
 type winnerUserID struct {
 	ID string `json:"winnerUserID"`
 }
+
 type userName struct {
 	Name string `json:"name"`
 }
@@ -29,7 +30,7 @@ type userPoints struct {
 	Points float64 `json:"points"`
 }
 
-type tournamentInit struct {
+type tournament struct {
 	Name    string  `json:"name"`
 	Deposit float64 `json:"deposit"`
 }
@@ -177,15 +178,15 @@ func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) createNewTournament(w http.ResponseWriter, req *http.Request) {
-	var tournament tournamentInit
-	err := json.NewDecoder(req.Body).Decode(&tournament)
+	var tourney tournament
+	err := json.NewDecoder(req.Body).Decode(&tourney)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("createNewTournament: can't decode request body: %s", err)
 		return
 	}
 
-	tourneyID, err := s.service.AddTournament(req.Context(), tournament.Name, tournament.Deposit)
+	tourneyID, err := s.service.AddTournament(req.Context(), tourney.Name, tourney.Deposit)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("createNewTournament: %s", err)

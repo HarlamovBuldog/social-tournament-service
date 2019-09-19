@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -40,14 +39,12 @@ func (db *DB) JoinTournament(ctx context.Context, tournamentID, userID string) e
 			return errors.Wrap(err, "AddUserToTournamentList")
 		}
 
-		var deposit float64
-		if tournament, err := db.GetTournament(sc, tournamentID); err == nil {
-			deposit = tournament.Deposit
-		} else {
+		tournament, err := db.GetTournament(sc, tournamentID)
+		if err != nil {
 			return errors.Wrap(err, "GetTournament")
 		}
 
-		if err := db.IncreaseTournamentPrize(sc, tournamentID, deposit); err != nil {
+		if err := db.IncreaseTournamentPrize(sc, tournamentID, tournament.Deposit); err != nil {
 			return errors.Wrap(err, "IncreaseTournamentPrize")
 		}
 
@@ -83,10 +80,8 @@ func (db *DB) FinishTournament(ctx context.Context, tournamentID, winnerUserID s
 			return errors.Wrap(err, "SetTournamentWinner")
 		}
 
-		var prize float64
-		if tournament, err := db.GetTournament(sc, tournamentID); err == nil {
-			prize = tournament.Prize
-		} else {
+		tournament, err := db.GetTournament(sc, tournamentID)
+		if err != nil {
 			return errors.Wrap(err, "GetTournament")
 		}
 
