@@ -14,16 +14,29 @@ type Server struct {
 	service storage.Service
 }
 
-type userIDJSON struct {
-	ID string `json:"id"`
+type userID struct {
+	ID string `json:"userID"`
 }
 
-type userNameJSON struct {
+type winnerUserID struct {
+	ID string `json:"winnerUserID"`
+}
+
+type userName struct {
 	Name string `json:"name"`
 }
 
-type userPointsJSON struct {
+type userPoints struct {
 	Points float64 `json:"points"`
+}
+
+type tournament struct {
+	Name    string  `json:"name"`
+	Deposit float64 `json:"deposit"`
+}
+
+type tournamentID struct {
+	ID string `json:"id"`
 }
 
 // NewServer initializes router and entrypoints
@@ -41,16 +54,16 @@ func NewServer(db storage.Service) *Server {
 	router.HandleFunc("/user/{id}/fund", s.addUserBonusPoints).Methods("POST")
 
 	router.HandleFunc("/tournament", s.createNewTournament).Methods("POST")
-	router.HandleFunc("/tournament/{id}", s.getcreateNewTournamentInfo).Methods("GET")
-	router.HandleFunc("/tournament/{id}/join", s.joincreateNewTournament).Methods("POST")
+	router.HandleFunc("/tournament/{id}", s.getTournamentInfo).Methods("GET")
+	router.HandleFunc("/tournament/{id}/join", s.joinTournament).Methods("POST")
 	router.HandleFunc("/tournament/{id}/finish", s.finishTournament).Methods("POST")
-	router.HandleFunc("/tournament/{id}", s.deleteTournament).Methods("DELETE")
+	router.HandleFunc("/tournament/{id}", s.cancelTournament).Methods("DELETE")
 
 	return &s
 }
 
 func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
-	var user userNameJSON
+	var user userName
 	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -58,15 +71,15 @@ func (s *Server) createNewUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userID, err := s.service.AddUser(req.Context(), user.Name)
+	usrID, err := s.service.AddUser(req.Context(), user.Name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("error createNewUser: %v", err)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(userIDJSON{
-		ID: userID,
+	err = json.NewEncoder(w).Encode(userID{
+		ID: usrID,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -115,7 +128,7 @@ func (s *Server) removeUser(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
-	var points userPointsJSON
+	var points userPoints
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -140,7 +153,7 @@ func (s *Server) takeUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
-	var points userPointsJSON
+	var points userPoints
 	err := json.NewDecoder(req.Body).Decode(&points)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -165,13 +178,117 @@ func (s *Server) addUserBonusPoints(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) createNewTournament(w http.ResponseWriter, req *http.Request) {
+	var tourney tournament
+	err := json.NewDecoder(req.Body).Decode(&tourney)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("createNewTournament: can't decode request body: %s", err)
+		return
+	}
 
+	tourneyID, err := s.service.AddTournament(req.Context(), tourney.Name, tourney.Deposit)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("createNewTournament: %s", err)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(tournamentID{
+		ID: tourneyID,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("createNewTournament: error encoding json: %s", err)
+		return
+	}
 }
-func (s *Server) getcreateNewTournamentInfo(w http.ResponseWriter, req *http.Request) {
+
+func (s *Server) getTournamentInfo(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	tournamentID, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Print("getTournamentInfo: tournament id is not provided")
+		return
+	}
+
+	tournament, err := s.service.GetTournament(req.Context(), tournamentID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("getTournamentInfo: %s", err)
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(&tournament); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("getTournamentInfo: error encoding json: %s", err)
+		return
+	}
 }
-func (s *Server) joincreateNewTournament(w http.ResponseWriter, req *http.Request) {
+
+func (s *Server) joinTournament(w http.ResponseWriter, req *http.Request) {
+	var usrID userID
+	err := json.NewDecoder(req.Body).Decode(&usrID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("joinTournament: can't decode request body: %s", err)
+		return
+	}
+
+	vars := mux.Vars(req)
+	tournamentID, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Print("joinTournament: tournament id is not provided")
+		return
+	}
+
+	err = s.service.JoinTournament(req.Context(), tournamentID, usrID.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("joinTournament: %s", err)
+		return
+	}
 }
+
 func (s *Server) finishTournament(w http.ResponseWriter, req *http.Request) {
+	var winnerUsrID winnerUserID
+	err := json.NewDecoder(req.Body).Decode(&winnerUsrID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("finishTournament: can't decode request body: %s", err)
+		return
+	}
+
+	vars := mux.Vars(req)
+	tournamentID, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Print("finishTournament: tournament id is not provided")
+		return
+	}
+
+	err = s.service.FinishTournament(req.Context(), tournamentID, winnerUsrID.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("finishTournament: %s", err)
+		return
+	}
 }
-func (s *Server) deleteTournament(w http.ResponseWriter, req *http.Request) {
+
+func (s *Server) cancelTournament(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	tournamentID, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Print("cancelTournament: tournament id is not provided")
+		return
+	}
+
+	err := s.service.DeleteTournament(req.Context(), tournamentID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("cancelTournament: %s", err)
+		return
+	}
 }

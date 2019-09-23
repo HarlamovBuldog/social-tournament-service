@@ -25,7 +25,7 @@ func TestCreateNewUser_Success(t *testing.T) {
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Gennadiy")).Times(1).Return(randomUserID, nil)
 
-	enc, err := json.Marshal(userNameJSON{
+	enc, err := json.Marshal(userName{
 		Name: "Gennadiy",
 	})
 	require := require.New(t)
@@ -48,10 +48,10 @@ func TestCreateNewUser_Success(t *testing.T) {
 	actualCode := w.Result().StatusCode
 	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
 
-	var actualUserID userIDJSON
+	var actualUserID userID
 	err = json.NewDecoder(w.Result().Body).Decode(&actualUserID)
 	require.NoError(err)
-	require.Equal(userIDJSON{ID: randomUserID}, actualUserID, "The two bodies shoud be the same")
+	require.Equal(userID{ID: randomUserID}, actualUserID, "The two bodies shoud be the same")
 }
 
 func TestCreateNewUser_DB_Fail(t *testing.T) {
@@ -61,7 +61,7 @@ func TestCreateNewUser_DB_Fail(t *testing.T) {
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Vasiliy")).Times(1).Return("", errors.New("insert doc to collection"))
 
-	enc, err := json.Marshal(userNameJSON{
+	enc, err := json.Marshal(userName{
 		Name: "Vasiliy",
 	})
 	require := require.New(t)
@@ -226,11 +226,12 @@ func TestTakeUserBonusPoints_Success(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
-	userPoints := 200.0
-	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).Return(nil)
+	userPointsToTake := 200.0
+	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToTake)).
+		Times(1).Return(nil)
 
-	enc, err := json.Marshal(userPointsJSON{
-		Points: userPoints,
+	enc, err := json.Marshal(userPoints{
+		Points: userPointsToTake,
 	})
 	require := require.New(t)
 	require.NoError(err)
@@ -254,12 +255,12 @@ func TestTakeUserBonusPoints_DB_Fail(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
-	userPoints := 200.0
-	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).
-		Return(errors.New("update doc in collection"))
+	userPointsToTake := 200.0
+	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToTake)).
+		Times(1).Return(errors.New("update doc in collection"))
 
-	enc, err := json.Marshal(userPointsJSON{
-		Points: userPoints,
+	enc, err := json.Marshal(userPoints{
+		Points: userPointsToTake,
 	})
 	require := require.New(t)
 	require.NoError(err)
@@ -304,9 +305,9 @@ func TestTakeUserBonusPoints_Bad_Req_URL(t *testing.T) {
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
-	userPoints := 200.0
-	enc, err := json.Marshal(userPointsJSON{
-		Points: userPoints,
+	userPointsToTake := 200.0
+	enc, err := json.Marshal(userPoints{
+		Points: userPointsToTake,
 	})
 	require := require.New(t)
 	require.NoError(err)
@@ -329,11 +330,12 @@ func TestAddUserBonusPoints_Success(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
-	userPoints := 200.0
-	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).Return(nil)
+	userPointsToAdd := 200.0
+	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToAdd)).
+		Times(1).Return(nil)
 
-	enc, err := json.Marshal(userPointsJSON{
-		Points: userPoints,
+	enc, err := json.Marshal(userPoints{
+		Points: userPointsToAdd,
 	})
 	require := require.New(t)
 	require.NoError(err)
@@ -357,12 +359,12 @@ func TestAddUserBonusPoints_DB_Fail(t *testing.T) {
 
 	mock := storage.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
-	userPoints := 200.0
-	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPoints)).Times(1).
-		Return(errors.New("update doc in collection"))
+	userPointsToAdd := 200.0
+	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToAdd)).
+		Times(1).Return(errors.New("update doc in collection"))
 
-	enc, err := json.Marshal(userPointsJSON{
-		Points: userPoints,
+	enc, err := json.Marshal(userPoints{
+		Points: userPointsToAdd,
 	})
 	require := require.New(t)
 	require.NoError(err)
@@ -407,9 +409,9 @@ func TestAddUserBonusPoints_Bad_Req_URL(t *testing.T) {
 	mock := storage.NewMockService(ctrl)
 	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
-	userPoints := 200.0
-	enc, err := json.Marshal(userPointsJSON{
-		Points: userPoints,
+	userPointsToAdd := 200.0
+	enc, err := json.Marshal(userPoints{
+		Points: userPointsToAdd,
 	})
 	require := require.New(t)
 	require.NoError(err)

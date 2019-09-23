@@ -1,8 +1,11 @@
+//go:generate mockgen -source=storage.go -destination=storage_mock.go -package=storage
+
 package storage
 
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -21,6 +24,82 @@ func CreateNew(db *mongo.Database) *DB {
 	return &DB{
 		conn: db,
 	}
+}
+
+func (db *DB) JoinTournament(ctx context.Context, tournamentID, userID string) error {
+	session, err := db.conn.Client().StartSession()
+	if err != nil {
+		return errors.Wrap(err, "error start mongoDB session")
+	}
+	if err := session.StartTransaction(); err != nil {
+		return errors.Wrap(err, "error start transaction")
+	}
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+		if err := db.AddUserToTournamentList(sc, tournamentID, userID); err != nil {
+			return errors.Wrap(err, "AddUserToTournamentList")
+		}
+
+		tournament, err := db.GetTournament(sc, tournamentID)
+		if err != nil {
+			return errors.Wrap(err, "GetTournament")
+		}
+
+		if err := db.IncreaseTournamentPrize(sc, tournamentID, tournament.Deposit); err != nil {
+			return errors.Wrap(err, "IncreaseTournamentPrize")
+		}
+
+		if err := session.CommitTransaction(sc); err != nil {
+			return errors.Wrap(err, "commit transaction")
+		}
+
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "error processing transaction")
+	}
+
+	session.EndSession(ctx)
+	return nil
+}
+
+func (db *DB) FinishTournament(ctx context.Context, tournamentID, winnerUserID string) error {
+	session, err := db.conn.Client().StartSession()
+	if err != nil {
+		return errors.Wrap(err, "error start mongoDB session")
+	}
+	if err := session.StartTransaction(); err != nil {
+		return errors.Wrap(err, "error start transaction")
+	}
+
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+		if err := db.SetTournamentStatus(sc, tournamentID, StatusFinished); err != nil {
+			return errors.Wrap(err, "SetTournamentStatus")
+		}
+
+		err := db.SetTournamentWinner(sc, tournamentID, winnerUserID)
+		if err != nil {
+			return errors.Wrap(err, "SetTournamentWinner")
+		}
+
+		tournament, err := db.GetTournament(sc, tournamentID)
+		if err != nil {
+			return errors.Wrap(err, "GetTournament")
+		}
+
+		if err := db.FundUserBalance(sc, winnerUserID, tournament.Prize); err != nil {
+			return errors.Wrap(err, "FundUserBalance")
+		}
+
+		if err := session.CommitTransaction(sc); err != nil {
+			return errors.Wrap(err, "commit transaction")
+		}
+
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "error processing transaction")
+	}
+
+	session.EndSession(ctx)
+	return nil
 }
 
 // Service is the wrapper for all methods working with db.
@@ -46,6 +125,9 @@ type Service interface {
 	IncreaseTournamentPrize(ctx context.Context, id string, amount float64) error
 	DecreaseTournamentPrize(ctx context.Context, id string, amount float64) error
 	SetTournamentWinner(ctx context.Context, tournamentID, userID string) error
-	SetTournamentStatus(ctx context.Context, tournamentID, status string) error
+	SetTournamentStatus(ctx context.Context, tournamentID string, status TournamentStatus) error
 	AddUserToTournamentList(ctx context.Context, tournamentID, userID string) error
+
+	JoinTournament(ctx context.Context, tournamentID, userID string) error
+	FinishTournament(ctx context.Context, tournamentID, winnerUserID string) error
 }
