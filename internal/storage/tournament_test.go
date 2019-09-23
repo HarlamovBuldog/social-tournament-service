@@ -293,3 +293,116 @@ func TestSetTournamentStatus(t *testing.T) {
 
 	cleanUp(t)
 }
+
+func TestJoinTournament(t *testing.T) {
+	expectedTournamentName := "tournament-1"
+	expectedTournamentDeposit := 1000.0
+	expectedTournamentID, err := db.AddTournament(context.TODO(), expectedTournamentName, expectedTournamentDeposit)
+	require := require.New(t)
+	require.NoError(err)
+
+	userJoinTorneyID := primitive.NewObjectID()
+	err = db.JoinTournament(context.TODO(), expectedTournamentID, userJoinTorneyID.Hex())
+	require.NoError(err)
+
+	actualTournament, err := db.GetTournament(context.TODO(), expectedTournamentID)
+	require.NoError(err)
+
+	expectedTournamentObjID, err := primitive.ObjectIDFromHex(expectedTournamentID)
+	require.NoError(err)
+
+	expectedTournamentPrize := expectedTournamentDeposit
+	expectedTournament := Tournament{
+		ID:      expectedTournamentObjID,
+		Name:    expectedTournamentName,
+		Deposit: expectedTournamentDeposit,
+		Users:   []primitive.ObjectID{userJoinTorneyID},
+		Prize:   expectedTournamentPrize,
+	}
+	require.Equal(expectedTournament, *actualTournament, "The two tournament objects should be the same")
+
+	badTournamentID := "bad_t_id"
+	actualErr := db.JoinTournament(context.TODO(), badTournamentID, userJoinTorneyID.Hex())
+	expectedErr := fmt.Sprintf("error processing transaction: AddUserToTournamentList: convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badTournamentID)
+	require.EqualError(actualErr, expectedErr, "The two errors should be the same")
+
+	badUserID := "bad_user_id"
+	actualErr = db.JoinTournament(context.TODO(), expectedTournamentID, badUserID)
+	expectedErr = fmt.Sprintf("error processing transaction: AddUserToTournamentList: convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badUserID)
+	require.EqualError(actualErr, expectedErr, "The two errors should be the same")
+
+	notExistTournamentID := primitive.NewObjectID().Hex()
+	actualErr = db.JoinTournament(context.TODO(), notExistTournamentID, userJoinTorneyID.Hex())
+	expectedErr = "error processing transaction: AddUserToTournamentList: update doc in collection: ModifiedCount != 1"
+	require.EqualError(actualErr, expectedErr, "The two errors should be the same")
+
+	cleanUp(t)
+}
+
+func TestFinishTournament(t *testing.T) {
+	expectedTournamentName := "tournament-1"
+	expectedTournamentDeposit := 1000.0
+	expectedTournamentID, err := db.AddTournament(context.TODO(), expectedTournamentName, expectedTournamentDeposit)
+	require := require.New(t)
+	require.NoError(err)
+
+	expectedUserName := "Vasya"
+	expectedUserID, err := db.AddUser(context.TODO(), expectedUserName)
+	require.NoError(err)
+
+	err = db.JoinTournament(context.TODO(), expectedTournamentID, expectedUserID)
+	require.NoError(err)
+
+	err = db.FinishTournament(context.TODO(), expectedTournamentID, expectedUserID)
+	require.NoError(err)
+
+	actualTournament, err := db.GetTournament(context.TODO(), expectedTournamentID)
+	require.NoError(err)
+
+	expectedTourneyID, err := primitive.ObjectIDFromHex(expectedTournamentID)
+	require.NoError(err)
+	expectedUsrID, err := primitive.ObjectIDFromHex(expectedUserID)
+	require.NoError(err)
+	expectedTournament := Tournament{
+		ID:      expectedTourneyID,
+		Name:    expectedTournamentName,
+		Deposit: expectedTournamentDeposit,
+		Users: []primitive.ObjectID{
+			expectedUsrID,
+		},
+		Status: StatusFinished,
+		Winner: expectedUsrID,
+		Prize:  expectedTournamentDeposit,
+	}
+	require.Equal(expectedTournament, *actualTournament, "The two tournament objects should be the same")
+
+	actualUser, err := db.GetUser(context.TODO(), expectedUserID)
+	require.NoError(err)
+
+	expectedUser := User{
+		ID:      expectedUsrID,
+		Name:    expectedUserName,
+		Balance: expectedTournamentDeposit,
+	}
+	require.Equal(expectedUser, *actualUser, "The two user objects should be the same")
+
+	badTournamentID := "bad_t_id"
+	actualErr := db.FinishTournament(context.TODO(), badTournamentID, expectedUserID)
+	expectedErr := fmt.Sprintf("error processing transaction: SetTournamentStatus: convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badTournamentID)
+	require.EqualError(actualErr, expectedErr, "The two errors should be the same")
+
+	err = db.SetTournamentStatus(context.TODO(), expectedTournamentID, StatusStarted)
+	require.NoError(err)
+
+	badUserID := "bad_user_id"
+	actualErr = db.FinishTournament(context.TODO(), expectedTournamentID, badUserID)
+	expectedErr = fmt.Sprintf("error processing transaction: SetTournamentWinner: convert string %s to primitive.ObjectID type: encoding/hex: invalid byte: U+005F '_'", badUserID)
+	require.EqualError(actualErr, expectedErr, "The two errors should be the same")
+
+	notExistTournamentID := primitive.NewObjectID().Hex()
+	actualErr = db.FinishTournament(context.TODO(), notExistTournamentID, expectedUserID)
+	expectedErr = "error processing transaction: SetTournamentStatus: update doc in collection: ModifiedCount != 1"
+	require.EqualError(actualErr, expectedErr, "The two errors should be the same")
+
+	cleanUp(t)
+}
