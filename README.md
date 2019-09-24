@@ -1,1 +1,1 @@
-# social-tournament-service
+# social-tournament-service [![Coverage Status](https://coveralls.io/repos/github/HarlamovBuldog/social-tournament-service/badge.svg?branch=add-tests-for-transaction-methods-in-storage-pkg)](https://coveralls.io/github/HarlamovBuldog/social-tournament-service?branch=add-tests-for-transaction-methods-in-storage-pkg)
