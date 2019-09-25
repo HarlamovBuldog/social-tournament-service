@@ -12,9 +12,9 @@ test:
 
 test-coverage:
 	go get github.com/mattn/goveralls && \
-	env GO111MODULE=on go test -mod=vendor -v -cover -coverprofile /usr/local/coverage.out.tmp ./... && \
-	cat /usr/local/coverage.out.tmp | grep -v "_mock.go" > /usr/local/coverage.out && \
-	/usr/local/go/bin/goveralls -coverprofile /usr/local/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+	env GO111MODULE=on go test -mod=vendor -v -cover -coverprofile ~/coverage.out.tmp ./... && \
+	cat ~/coverage.out.tmp | grep -v "_mock.go" > ~/coverage.out && \
+	/usr/local/go/bin/goveralls -coverprofile ~/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
 
 clean:
 	rm -f $(BINARY_NAME)
