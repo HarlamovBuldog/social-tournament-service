@@ -13,7 +13,7 @@ test:
     cat ~/coverage.out.tmp | grep -v "_mock.go" > ~/coverage.out
 test-coverage:
 	env GO111MODULE=off go get github.com/mattn/goveralls && \
-	$HOME/gopath/bin/goveralls -coverprofile ~/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+	$(HOME)/$(GOPATH)/bin/goveralls -coverprofile ~/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
 
 clean:
 	rm -f $(BINARY_NAME)
