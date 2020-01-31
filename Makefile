@@ -8,12 +8,12 @@ run:
 	./$(BINARY_NAME)
 
 test:
-	env GO111MODULE=off go get golang.org/x/tools/cmd/cover
+	env GO111MODULE=off go get golang.org/x/tools/cmd/cover && \
 	env GO111MODULE=on go test -mod=vendor -v -cover -coverprofile ~/coverage.out.tmp ./... && \
     cat ~/coverage.out.tmp | grep -v "_mock.go" > ~/coverage.out
 test-coverage:
 	env GO111MODULE=off go get github.com/mattn/goveralls && \
-	goveralls -coverprofile ~/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+	goveralls -coverprofile ~/coverage.out -service=circle-ci -repotoken=$(COVERALLS_TOKEN)
 
 clean:
 	rm -f $(BINARY_NAME)
