@@ -27,6 +27,7 @@ jobs:
             sudo rm -rf /usr/local/go
             sudo tar -C /usr/local -xzf go1.12.6.linux-amd64.tar.gz
       - checkout
+      - run: make test
       - run: make test-coverage
   create-push-docker-image:
     executor: my-executor
