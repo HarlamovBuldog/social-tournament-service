@@ -1,1 +1,3 @@
-# social-tournament-service [![Coverage Status](https://coveralls.io/repos/github/HarlamovBuldog/social-tournament-service/badge.svg?branch=add-tests-for-transaction-methods-in-storage-pkg)](https://coveralls.io/github/HarlamovBuldog/social-tournament-service?branch=add-tests-for-transaction-methods-in-storage-pkg)[![CircleCI](https://circleci.com/gh/HarlamovBuldog/social-tournament-service.svg?style=svg)](https://circleci.com/gh/HarlamovBuldog/social-tournament-service)
+# social-tournament-service 
+[![Coverage Status](https://coveralls.io/repos/github/HarlamovBuldog/sts-back/badge.svg?branch=master)](https://coveralls.io/github/HarlamovBuldog/sts-back?branch=master)
+[![CircleCI](https://circleci.com/gh/HarlamovBuldog/sts-back.svg?style=svg)](https://circleci.com/gh/HarlamovBuldog/sts-back)
