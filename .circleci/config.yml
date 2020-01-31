@@ -6,8 +6,6 @@ executors:
       IMAGE_NAME: vladwoode/social-tournament-service
     docker:
       - image: circleci/golang:1.12
-        environment:
-          - GO111MODULE=on
     working_directory: /go/src/github.com/HarlamovBuldog/social-tournament-service
 
 jobs:
@@ -15,7 +13,7 @@ jobs:
     executor: my-executor
     steps:
       - checkout
-      - run: go build -mod=vendor ./...
+      - run: make build
   test:
     machine:
       image: ubuntu-1604:201903-01
@@ -29,7 +27,8 @@ jobs:
             sudo rm -rf /usr/local/go
             sudo tar -C /usr/local -xzf go1.12.6.linux-amd64.tar.gz
       - checkout
-      - run: env GO111MODULE=on go test -mod=vendor -v -cover ./...
+      - run: make test
+      - run: make test-coverage
   create-push-docker-image:
     executor: my-executor
     steps:
