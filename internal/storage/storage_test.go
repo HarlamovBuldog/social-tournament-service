@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/docker"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,9 +17,10 @@ import (
 )
 
 var (
-	client *mongo.Client
-	db     *DB
-	users  *mongo.Collection
+	client      *mongo.Client
+	db          *DB
+	users       *mongo.Collection
+	tournaments *mongo.Collection
 )
 
 const (
@@ -37,7 +39,16 @@ func NewContainer(pool, repository, tag string, env []string) (*Container, error
 		return nil, errors.Wrap(err, "error create new docker pool")
 	}
 
-	r, err := p.Run(repository, tag, env)
+	opts := &dockertest.RunOptions{
+		Name:       "mongo",
+		Repository: repository,
+		Tag:        tag,
+		Env:        env,
+		Cmd: []string{
+			"mongod", "--replSet", "rs0",
+		},
+	}
+	r, err := p.RunWithOptions(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "error running docker container")
 	}
@@ -83,6 +94,26 @@ func setupDB() (*Container, error) {
 		return nil, err
 	}
 
+	exec, err := c.pool.Client.CreateExec(docker.CreateExecOptions{
+		Cmd: []string{
+			"mongo", "--eval", "rs.initiate({_id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }]});db = db.getSiblingDB('sts')",
+		},
+		Container:    c.resource.Container.ID,
+		AttachStdout: true,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "Create exec")
+	}
+
+	time.Sleep(2 * time.Second)
+	err = c.pool.Client.StartExec(exec.ID, docker.StartExecOptions{
+		Detach:       false,
+		OutputStream: os.Stdout,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "Start exec")
+	}
+
 	posPort := c.GetBindedPort(dbPort)
 
 	i := 0
@@ -94,7 +125,7 @@ func setupDB() (*Container, error) {
 
 		time.Sleep(2 * time.Second)
 
-		writeConnectionString := fmt.Sprintf("mongodb://localhost:%s", posPort)
+		writeConnectionString := fmt.Sprintf("mongodb://localhost:%s/?connect=direct&replicaSet=rs0&retryWrites=true", posPort)
 
 		clientOptions := options.Client().ApplyURI(writeConnectionString)
 		client, err = mongo.Connect(context.TODO(), clientOptions)
@@ -113,6 +144,7 @@ func setupDB() (*Container, error) {
 		log.Println("Connected to MongoDB!")
 		db = CreateNew(client.Database(dbName))
 		users = client.Database(dbName).Collection(usersCollectionName)
+		tournaments = client.Database(dbName).Collection(tournamentsCollectionName)
 
 		break
 	}
@@ -121,9 +153,9 @@ func setupDB() (*Container, error) {
 }
 
 func cleanUp(t *testing.T) {
-	err := client.Database(dbName).Collection(usersCollectionName).Drop(context.TODO())
+	err := users.Drop(context.TODO())
 	require.NoError(t, err)
 
-	err = client.Database(dbName).Collection(tournamentsCollectionName).Drop(context.TODO())
+	err = tournaments.Drop(context.TODO())
 	require.NoError(t, err)
 }

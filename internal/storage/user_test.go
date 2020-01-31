@@ -106,6 +106,8 @@ func TestTakeUserBalance(t *testing.T) {
 
 	assert.Equal(&User{ID: addedUserObjectID, Name: "Vasya", Balance: -100.0}, addedUser,
 		"The two users should be the same.")
+
+	cleanUp(t)
 }
 
 func TestFundUserBalance(t *testing.T) {
@@ -138,4 +140,6 @@ func TestFundUserBalance(t *testing.T) {
 
 	assert.Equal(&User{ID: addedUserObjectID, Name: "Vasya", Balance: 100.0}, addedUser,
 		"The two users should be the same.")
+
+	cleanUp(t)
 }
