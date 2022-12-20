@@ -18,3 +18,6 @@ test-coverage:
 clean:
 	rm -f $(BINARY_NAME)
 	env GO111MODULE=on go clean -mod=vendor
+
+grpc-stub:
+	protoc --proto_path=proto proto/*.proto --go_out=. --go-grpc_out=.
