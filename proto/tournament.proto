@@ -7,6 +7,15 @@ option go_package = "./internal/server/pb";
 message CreateUserRequest {string name=1;}
 message CreateUserResponse {string id=1;}
 
-service User {
+message User {
+  string name=1;
+  int32 age=2;
+}
+
+message GetUserListRequest {}
+message GetUserListResponse { repeated User users=1;}
+
+service Tournament {
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {}
+  rpc UserList(GetUserListRequest) returns (GetUserListResponse) {}
 }

@@ -8,11 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
+	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
-
-	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
-	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

@@ -2,28 +2,23 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"strconv"
-	"time"
+	"net"
 
-	"github.com/HarlamovBuldog/social-tournament-service/internal/server"
-	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
+	"github.com/HarlamovBuldog/social-tournament-service/internal/server/pb"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"gopkg.in/yaml.v3"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
+// TODO: move config to separate pkg.
 type config struct {
 	ConnStr    string `yaml:"conn_str"`
 	ServerPort int32  `yaml:"server_port"`
 	DBName     string `yaml:"db_name"`
 }
 
+// Validate checks if all config values are set.
 func (conf *config) Validate() error {
 	if conf.ConnStr == "" {
 		return errors.New("connection string is not provided")
@@ -38,8 +33,9 @@ func (conf *config) Validate() error {
 	return nil
 }
 
+/*
 func main() {
-	yamlConfigFile, err := ioutil.ReadFile("config.yaml")
+	yamlConfigFile, err := os.ReadFile("config.yaml")
 	if err != nil {
 		log.Fatalf("error opening cofiguration yaml file: %v\n", err)
 	}
@@ -61,10 +57,11 @@ func main() {
 	}
 
 	defer func() {
-		ctx, _ := context.WithTimeout(context.TODO(), time.Second*5)
+		ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+		defer cancel()
 		err := client.Disconnect(ctx)
 		if err != nil {
-			log.Fatalf("error disconnecting from mongo db: %v", err)
+			log.Printf("error disconnecting from mongo db: %v", err)
 		}
 	}()
 
@@ -106,4 +103,40 @@ func main() {
 	}
 
 	log.Print("Server stopped")
+}
+*/
+
+type server struct {
+	pb.UnimplementedTournamentServer
+}
+
+func (s *server) UserList(ctx context.Context, in *pb.GetUserListRequest) (*pb.GetUserListResponse, error) {
+	return &pb.GetUserListResponse{Users: getUserList()}, nil
+}
+
+func main() {
+	listener, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
+	s := grpc.NewServer()
+	reflection.Register(s)
+	pb.RegisterTournamentServer(s, &server{})
+	if err := s.Serve(listener); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+}
+
+func getUserList() []*pb.User {
+	return []*pb.User{
+		{
+			Name: "Stas",
+			Age:  12,
+		},
+		{
+			Name: "Vlad",
+			Age:  25,
+		},
+	}
 }
