@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	storage2 "github.com/HarlamovBuldog/social-tournament-service/internal/pkg/storage"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,8 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
 )
 
 func TestCreateNewUser_Success(t *testing.T) {
@@ -22,7 +21,7 @@ func TestCreateNewUser_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	randomUserID := primitive.NewObjectID().Hex()
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Gennadiy")).Times(1).Return(randomUserID, nil)
 
 	enc, err := json.Marshal(userName{
@@ -58,7 +57,7 @@ func TestCreateNewUser_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Eq("Vasiliy")).Times(1).Return("", errors.New("insert doc to collection"))
 
 	enc, err := json.Marshal(userName{
@@ -82,7 +81,7 @@ func TestCreateNewUser_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().AddUser(gomock.Any(), gomock.Any()).Times(0)
 
 	req := httptest.NewRequest("POST", "/user", nil)
@@ -99,9 +98,9 @@ func TestGetUserInfo_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	expectedUserID := primitive.NewObjectID()
-	expectedUser := &storage.User{ID: expectedUserID, Name: "Gennadiy", Balance: 0}
+	expectedUser := &storage2.User{ID: expectedUserID, Name: "Gennadiy", Balance: 0}
 	mock.EXPECT().GetUser(gomock.Any(), gomock.Eq(expectedUserID.Hex())).Times(1).Return(expectedUser, nil)
 
 	expectedURLPath := fmt.Sprintf("/user/%s", expectedUserID.Hex())
@@ -117,7 +116,7 @@ func TestGetUserInfo_Success(t *testing.T) {
 	require := require.New(t)
 	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
 
-	var actualUser storage.User
+	var actualUser storage2.User
 	err := json.NewDecoder(w.Result().Body).Decode(&actualUser)
 	require.NoError(err)
 	require.Equal(*expectedUser, actualUser, "The two objects shoud be the same")
@@ -127,7 +126,7 @@ func TestGetUserInfo_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	expectedUserID := primitive.NewObjectID()
 	mock.EXPECT().GetUser(gomock.Any(), gomock.Eq(expectedUserID.Hex())).
 		Times(1).Return(nil, errors.New("get doc from collection"))
@@ -148,7 +147,7 @@ func TestGetUserInfo_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().GetUser(gomock.Any(), gomock.Any()).Times(0)
 
 	expectedURLPath := fmt.Sprintf("/user/%s", "garbage")
@@ -166,7 +165,7 @@ func TestRemoveUser_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
 	mock.EXPECT().DeleteUser(gomock.Any(), gomock.Eq(userID.Hex())).Times(1).Return(nil)
 
@@ -186,7 +185,7 @@ func TestRemoveUser_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
 	mock.EXPECT().DeleteUser(gomock.Any(), gomock.Eq(userID.Hex())).Times(1).Return(errors.New("delete doc from collection"))
 
@@ -206,7 +205,7 @@ func TestRemoveUser_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().DeleteUser(gomock.Any(), gomock.Any()).Times(0)
 
 	expectedURLPath := fmt.Sprintf("/user/%s", "garbage")
@@ -224,7 +223,7 @@ func TestTakeUserBonusPoints_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
 	userPointsToTake := 200.0
 	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToTake)).
@@ -253,7 +252,7 @@ func TestTakeUserBonusPoints_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
 	userPointsToTake := 200.0
 	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToTake)).
@@ -282,7 +281,7 @@ func TestTakeUserBonusPoints_Bad_Req_Body(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	userID := primitive.NewObjectID()
@@ -302,7 +301,7 @@ func TestTakeUserBonusPoints_Bad_Req_URL(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().TakeUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	userPointsToTake := 200.0
@@ -328,7 +327,7 @@ func TestAddUserBonusPoints_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
 	userPointsToAdd := 200.0
 	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToAdd)).
@@ -357,7 +356,7 @@ func TestAddUserBonusPoints_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	userID := primitive.NewObjectID()
 	userPointsToAdd := 200.0
 	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Eq(userID.Hex()), gomock.Eq(userPointsToAdd)).
@@ -386,7 +385,7 @@ func TestAddUserBonusPoints_Bad_Req_Body(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	userID := primitive.NewObjectID()
@@ -406,7 +405,7 @@ func TestAddUserBonusPoints_Bad_Req_URL(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().FundUserBalance(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	userPointsToAdd := 200.0

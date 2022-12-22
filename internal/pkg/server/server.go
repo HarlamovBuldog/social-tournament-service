@@ -5,8 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
 	"github.com/gorilla/mux"
+
+	"github.com/HarlamovBuldog/social-tournament-service/internal/pkg/storage"
 )
 
 type Server struct {

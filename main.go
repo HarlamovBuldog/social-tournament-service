@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/HarlamovBuldog/social-tournament-service/internal/server/pb"
+	"github.com/HarlamovBuldog/social-tournament-service/internal/pkg/api/v1"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -107,11 +107,11 @@ func main() {
 */
 
 type server struct {
-	pb.UnimplementedTournamentServer
+	v1.UnimplementedTournamentServer
 }
 
-func (s *server) UserList(ctx context.Context, in *pb.GetUserListRequest) (*pb.GetUserListResponse, error) {
-	return &pb.GetUserListResponse{Users: getUserList()}, nil
+func (s *server) UserList(ctx context.Context, in *v1.GetUserListRequest) (*v1.GetUserListResponse, error) {
+	return &v1.GetUserListResponse{Users: getUserList()}, nil
 }
 
 func main() {
@@ -122,14 +122,14 @@ func main() {
 
 	s := grpc.NewServer()
 	reflection.Register(s)
-	pb.RegisterTournamentServer(s, &server{})
+	v1.RegisterTournamentServer(s, &server{})
 	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
 
-func getUserList() []*pb.User {
-	return []*pb.User{
+func getUserList() []*v1.User {
+	return []*v1.User{
 		{
 			Name: "Stas",
 			Age:  12,

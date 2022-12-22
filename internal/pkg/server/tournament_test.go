@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	storage2 "github.com/HarlamovBuldog/social-tournament-service/internal/pkg/storage"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/HarlamovBuldog/social-tournament-service/internal/storage"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -24,7 +24,7 @@ func TestCreateNewTournament_Success(t *testing.T) {
 	expectedTournamentName := "Tournament_1"
 	expectedTournamentDeposit := 1500.0
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().AddTournament(gomock.Any(), gomock.Eq(expectedTournamentName),
 		gomock.Eq(expectedTournamentDeposit)).Times(1).Return(expectedTournamentID, nil)
 
@@ -60,7 +60,7 @@ func TestCreateNewTournament_DB_Fail(t *testing.T) {
 	expectedTournamentDeposit := 1500.0
 	expectedError := errors.New("add doc to collection")
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().AddTournament(gomock.Any(), gomock.Eq(expectedTournamentName),
 		gomock.Eq(expectedTournamentDeposit)).Times(1).Return("", expectedError)
 
@@ -87,7 +87,7 @@ func TestCreateNewTournament_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().AddTournament(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	req := httptest.NewRequest("POST", "/tournament", nil)
@@ -104,11 +104,11 @@ func TestGetTournamentInfo_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	expectedTournamentID := primitive.NewObjectID()
 	expectedTournamentName := "Tournament_1"
 	expectedTournamentDeposit := 1500.0
-	expectedTournament := &storage.Tournament{
+	expectedTournament := &storage2.Tournament{
 		ID:      expectedTournamentID,
 		Name:    expectedTournamentName,
 		Deposit: expectedTournamentDeposit}
@@ -127,7 +127,7 @@ func TestGetTournamentInfo_Success(t *testing.T) {
 	require := require.New(t)
 	require.Equal(http.StatusOK, actualCode, "The two http codes should be the same")
 
-	var actualTournament storage.Tournament
+	var actualTournament storage2.Tournament
 	err := json.NewDecoder(w.Result().Body).Decode(&actualTournament)
 	require.NoError(err)
 	require.Equal(*expectedTournament, actualTournament, "The two objects shoud be the same")
@@ -137,7 +137,7 @@ func TestGetTournamentInfo_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	expectedTournamentID := primitive.NewObjectID()
 	expectedError := errors.New("get doc from collection")
 	mock.EXPECT().GetTournament(gomock.Any(), gomock.Eq(expectedTournamentID.Hex())).
@@ -155,7 +155,7 @@ func TestGetTournamentInfo_DB_Fail(t *testing.T) {
 	require := require.New(t)
 	require.Equal(http.StatusInternalServerError, actualCode, "The two http codes should be the same")
 
-	var actualTournament storage.Tournament
+	var actualTournament storage2.Tournament
 	err := json.NewDecoder(w.Result().Body).Decode(&actualTournament)
 	require.Error(err)
 }
@@ -164,7 +164,7 @@ func TestGetTournamentInfo_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().GetTournament(gomock.Any(), gomock.Any()).Times(0)
 
 	badURLPath := fmt.Sprint("/tournament/")
@@ -182,7 +182,7 @@ func TestJoinTournament_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	expectedTournamentID := primitive.NewObjectID().Hex()
 	expectedUserID := primitive.NewObjectID().Hex()
 	mock.EXPECT().JoinTournament(gomock.Any(), gomock.Eq(expectedTournamentID), gomock.Eq(expectedUserID)).
@@ -211,7 +211,7 @@ func TestJoinTournament_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	expectedTournamentID := primitive.NewObjectID().Hex()
 	expectedUserID := primitive.NewObjectID().Hex()
 	expectedError := errors.New("any error cause it's transaction")
@@ -241,7 +241,7 @@ func TestJoinTournament_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().JoinTournament(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	badURLPath := fmt.Sprint("/tournament/")
@@ -267,7 +267,7 @@ func TestFinishTournament_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	tournamentID := primitive.NewObjectID().Hex()
 	winnerUsrID := primitive.NewObjectID().Hex()
 	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Eq(tournamentID), gomock.Eq(winnerUsrID)).
@@ -296,7 +296,7 @@ func TestFinishTournament_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	tournamentID := primitive.NewObjectID().Hex()
 	winnerUsrID := primitive.NewObjectID().Hex()
 	expectedError := errors.New("any error cause it's transaction")
@@ -326,7 +326,7 @@ func TestFinishTournament_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().FinishTournament(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 	badURLPath := "/tournament/finish"
@@ -353,7 +353,7 @@ func TestCancelTournament_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	tournamentID := primitive.NewObjectID().Hex()
 	mock.EXPECT().DeleteTournament(gomock.Any(), gomock.Eq(tournamentID)).Times(1).Return(nil)
 
@@ -373,7 +373,7 @@ func TestCancelTournament_DB_Fail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	tournamentID := primitive.NewObjectID().Hex()
 	expectedError := errors.New("any error cause it's transaction")
 	mock.EXPECT().DeleteTournament(gomock.Any(), gomock.Eq(tournamentID)).Times(1).Return(expectedError)
@@ -394,7 +394,7 @@ func TestCancelTournament_Bad_Req(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mock := storage.NewMockService(ctrl)
+	mock := storage2.NewMockService(ctrl)
 	mock.EXPECT().DeleteTournament(gomock.Any(), gomock.Any()).Times(0)
 
 	badURLPath := "/tournament"

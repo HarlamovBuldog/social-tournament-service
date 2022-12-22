@@ -19,5 +19,6 @@ clean:
 	rm -f $(BINARY_NAME)
 	env GO111MODULE=on go clean -mod=vendor
 
+# add --go-grpc_out=. to generate pseudo server/controller code.
 grpc-stub:
-	protoc --proto_path=proto proto/*.proto --go_out=. --go-grpc_out=.
+	protoc --proto_path=internal/api/proto/v1 --go_out=. tournament.proto

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package main;
 
-option go_package = "./internal/server/pb";
+option go_package = "./internal/pkg/api/v1";
 
 message CreateUserRequest {string name=1;}
 message CreateUserResponse {string id=1;}
